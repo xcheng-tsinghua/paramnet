@@ -22,7 +22,7 @@ import numpy as np
 # 自定义模块
 # from models.TriFeaPred import TriFeaPred
 from data_utils.ParamDataLoader import ParamDataLoader
-from data_utils.ParamDataLoader import STEPMillionDataLoader
+from data_utils.ParamDataLoader import MCBDataLoader
 
 from models.TriFeaPred_OrigValid import TriFeaPred_OrigValid
 
@@ -35,12 +35,16 @@ def parse_args():
     parser.add_argument('--num_category', default=40, type=int, choices=[10, 40],  help='training on ModelNet10/40') # 指定训练集 ModelNet10/40
     parser.add_argument('--epoch', default=200, type=int, help='number of epoch in training') # 训练的epoch数
     parser.add_argument('--learning_rate', default=0.001, type=float, help='learning rate in training') # 学习率
-    parser.add_argument('--num_point', type=int, default=2500, help='Point Number') # 点数量
+    parser.add_argument('--num_point', type=int, default=2000, help='Point Number') # 点数量
     parser.add_argument('--optimizer', type=str, default='Adam', help='optimizer for training') # 优化器
     parser.add_argument('--decay_rate', type=float, default=1e-4, help='decay rate')
     parser.add_argument('--n_metatype', type=int, default=4, help='number of considered meta type')  # 计算约束时考虑的基元数, [0-13)共13种
-    parser.add_argument('--workers', type=int, default=10, help='dataloader workers')  # 计算约束时考虑的基元数, [0-13)共13种
-    parser.add_argument('--root_dataset', type=str, default=r'D:\document\DeepLearning\DataSet\STEPMillion\STEPMillion_pack1', help='root of dataset')
+    parser.add_argument('--workers', type=int, default=10, help='dataloader workers')
+    parser.add_argument('--save_str', type=str, default='TriFeaPred_ValidOrig', help='dataloader workers')
+
+    parser.add_argument('--local', default='True', choices=['True', 'False'], type=str, help='---')
+    parser.add_argument('--root_sever', type=str, default=r'/root/my_data/data_set/STEP20000_Hammersley_2000', help='root of dataset')
+    parser.add_argument('--root_local', type=str, default=r'D:\document\DeepLearning\DataSet\STEP20000_Hammersley_2000', help='root of dataset')
     # 点云数据集根目录
     # 服务器：r'/opt/data/private/data_set/PointCloud_Xindi_V2/'
 
@@ -56,7 +60,7 @@ def inplace_relu(m):
 
 
 def main(args):
-    save_str = 'TriFeaPred_ValidOrig'
+    save_str = args.save_str
 
     # 日志记录
     logger = logging.getLogger("Model")
@@ -72,13 +76,18 @@ def main(args):
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
 
     # 定义数据集，训练集及对应加载器
-    train_dataset = STEPMillionDataLoader(root=args.root_dataset, npoints=args.num_point, data_augmentation=True)
+    if args.local == 'True':
+        data_root = args.root_local
+    else:
+        data_root = args.root_sever
+
+    train_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, data_augmentation=True, is_train=True, is_back_addattr=True)
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=int(args.workers))  # , drop_last=True
 
     '''MODEL LOADING'''
     predictor = TriFeaPred_OrigValid(n_points_all=args.num_point, n_metatype=args.n_metatype).cuda()
 
-    model_savepth = 'model_trained/' + save_str + '.pth'
+    model_savepth = 'model_trained/' + save_str + '_fuse.pth'
     try:
         predictor.load_state_dict(torch.load(model_savepth))
         print('training from exist model: ' + model_savepth)
@@ -110,7 +119,7 @@ def main(args):
         predictor = predictor.train()
 
         for batch_id, data in enumerate(train_dataloader, 0):
-            xyz, eula_angle_label, nearby_label, meta_type_label = data
+            xyz, cls, eula_angle_label, nearby_label, meta_type_label = data
             bs, n_points, _ = xyz.size()
             n_items_batch = bs * n_points
 
