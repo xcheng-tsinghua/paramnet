@@ -40,5 +40,5 @@ ps -ef | grep python
 ## 服务器训练
 nohup python train_cls.py --bs=32 --local=False
 
-
+nohup python train_cst_pred.py --bs=18 --local=False --abc_pack=1 && python train_cst_pred.py --bs=18 --local=False --abc_pack=2
 
