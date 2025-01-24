@@ -17,14 +17,17 @@ import torch.nn.functional as F
 from datetime import datetime
 import logging # 记录日志信息
 import argparse
+from colorama import Fore, Back, Style, init
 import numpy as np
 
 # 自定义模块
 # from models.TriFeaPred import TriFeaPred
 from data_utils.ParamDataLoader import ParamDataLoader
-from data_utils.ParamDataLoader import MCBDataLoader
+from data_utils.ParamDataLoader import MCBDataLoader, STEPMillionDataLoader
 
-from models.TriFeaPred_OrigValid import TriFeaPred_OrigValid
+# from models.TriFeaPred_OrigValid import TriFeaPred_OrigValid as cst_pcd
+from models.parsenet import PrimitivesEmbeddingDGCNGn as cst_pcd
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -40,13 +43,18 @@ def parse_args():
     parser.add_argument('--decay_rate', type=float, default=1e-4, help='decay rate')
     parser.add_argument('--n_metatype', type=int, default=4, help='number of considered meta type')  # 计算约束时考虑的基元数, [0-13)共13种
     parser.add_argument('--workers', type=int, default=10, help='dataloader workers')
-    parser.add_argument('--save_str', type=str, default='TriFeaPred_ValidOrig', help='dataloader workers')
+    parser.add_argument('--save_str', type=str, default='parsenet', help='dataloader workers')
 
     parser.add_argument('--local', default='True', choices=['True', 'False'], type=str, help='---')
-    parser.add_argument('--root_sever', type=str, default=r'/root/my_data/data_set/STEP20000_Hammersley_2000', help='root of dataset')
-    parser.add_argument('--root_local', type=str, default=r'D:\document\DeepLearning\DataSet\STEP20000_Hammersley_2000', help='root of dataset')
-    # 点云数据集根目录
-    # 服务器：r'/opt/data/private/data_set/PointCloud_Xindi_V2/'
+    parser.add_argument('--root_sever', type=str, default=r'/root/my_data/data_set/STEPMillion/STEPMillion_pack1', help='root of dataset')
+    parser.add_argument('--root_local', type=str, default=r'D:\document\DeepLearning\DataSet\STEPMillion\STEPMillion_1\STEPMillion_pack1', help='root of dataset')
+
+    # Parametric20000
+    # sever: r'/root/my_data/data_set/STEP20000_Hammersley_2000'
+    # local: r'D:\document\DeepLearning\DataSet\STEP20000_Hammersley_2000'
+    # ABC
+    # sever: r'/root/my_data/data_set/STEPMillion/STEPMillion_pack1'
+    # local: r'D:\document\DeepLearning\DataSet\STEPMillion\STEPMillion_1\STEPMillion_pack1'
 
     args = parser.parse_args()
     print(args)
@@ -61,6 +69,8 @@ def inplace_relu(m):
 
 def main(args):
     save_str = args.save_str
+
+    print(Fore.BLACK + Back.BLUE + 'save as: ' + save_str)
 
     # 日志记录
     logger = logging.getLogger("Model")
@@ -81,13 +91,14 @@ def main(args):
     else:
         data_root = args.root_sever
 
-    train_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, data_augmentation=True, is_train=True, is_back_addattr=True)
+    # train_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, data_augmentation=True, is_train=True, is_back_addattr=True)
+    train_dataset = STEPMillionDataLoader(root=data_root, npoints=args.num_point, data_augmentation=True)
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=int(args.workers))  # , drop_last=True
 
     '''MODEL LOADING'''
-    predictor = TriFeaPred_OrigValid(n_points_all=args.num_point, n_metatype=args.n_metatype).cuda()
+    predictor = cst_pcd(n_points_all=args.num_point, n_metatype=args.n_metatype).cuda()
 
-    model_savepth = 'model_trained/' + save_str + '_fuse.pth'
+    model_savepth = 'model_trained/' + save_str + '.pth'
     try:
         predictor.load_state_dict(torch.load(model_savepth))
         print('training from exist model: ' + model_savepth)
@@ -119,7 +130,7 @@ def main(args):
         predictor = predictor.train()
 
         for batch_id, data in enumerate(train_dataloader, 0):
-            xyz, cls, eula_angle_label, nearby_label, meta_type_label = data
+            xyz, eula_angle_label, nearby_label, meta_type_label = data[0], data[-3], data[-2], data[-1]
             bs, n_points, _ = xyz.size()
             n_items_batch = bs * n_points
 
@@ -164,9 +175,25 @@ def main(args):
         torch.save(predictor.state_dict(), model_savepth)
 
 
+def clear_log(log_dir):
+    """
+    清空空白的log文件
+    """
+    # 遍历文件夹中的所有文件
+    for filename in os.listdir(log_dir):
+        # 获取文件的完整路径
+        file_path = os.path.join(log_dir, filename)
+        # 检查是否为txt文件且为空
+        if filename.endswith('.txt') and os.path.isfile(file_path) and os.path.getsize(file_path) == 0:
+            os.remove(file_path)
+            print(f"Deleted empty file: {file_path}")
+
+
 if __name__ == '__main__':
     # asas = np.loadtxt(r'D:\document\DeepLearning\DataSet\STEPMillion\STEPMillion_pack1\overall\2629.txt')
     # print(asas)
 
     parsed_args = parse_args()
+    clear_log('./log')
+    init(autoreset=True)
     main(parsed_args)

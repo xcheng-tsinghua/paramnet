@@ -145,14 +145,19 @@ class STEPMillionDataLoader(Dataset):
         self.data_augmentation = data_augmentation
         self.is_backaddattr = is_backaddattr
 
-        print('STEPMillion dataset, from:' + root)
-        index_file = os.path.join(root, 'index_file.txt')
+        data_path = os.path.join(root, 'overall')
+        print('STEPMillion dataset, from:' + data_path)
 
-        self.datapath = []
-        with open(index_file, 'r', encoding="utf-8") as f:
-            for line in f.readlines():
-                current_path = os.path.join(root, 'overall', line)
-                self.datapath.append(current_path)
+        self.datapath = get_allfiles(data_path)
+
+
+        # index_file = os.path.join(root, 'index_file.txt')
+        #
+        # self.datapath = []
+        # with open(index_file, 'r', encoding="utf-8") as f:
+        #     for line in f.readlines():
+        #         current_path = os.path.join(root, 'overall', line)
+        #         self.datapath.append(current_path)
 
         print('instance all:', len(self.datapath))
 
