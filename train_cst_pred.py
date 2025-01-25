@@ -44,7 +44,7 @@ def parse_args():
     parser.add_argument('--decay_rate', type=float, default=1e-4, help='decay rate')
     parser.add_argument('--n_metatype', type=int, default=4, help='number of considered meta type')  # 计算约束时考虑的基元数, [0-13)共13种
     parser.add_argument('--workers', type=int, default=10, help='dataloader workers')
-    parser.add_argument('--save_str', type=str, default='TriFeaPred_ValidOrig_fuse', help='dataloader workers')
+    parser.add_argument('--save_str', type=str, default='hpnet', help='dataloader workers')
 
     parser.add_argument('--abc_pack', type=int, default=-1, help='dataloader workers')
 
