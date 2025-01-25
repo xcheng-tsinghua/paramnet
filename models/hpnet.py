@@ -256,6 +256,8 @@ class PrimitiveNet(nn.Module):
     def __init__(self, n_points_all, n_metatype):
         super(PrimitiveNet, self).__init__()
 
+        print('--------------hpnet imported----------------')
+
         self.affinitynet = PrimitivesEmbeddingDGCNGn(
             emb_size=128
         )
