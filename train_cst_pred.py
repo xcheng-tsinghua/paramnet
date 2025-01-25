@@ -47,6 +47,7 @@ def parse_args():
 
     parser.add_argument('--abc_pack', type=int, default=1, help='dataloader workers')
 
+    parser.add_argument('--is_train', default='True', choices=['True', 'False'], type=str, help='---')
     parser.add_argument('--local', default='False', choices=['True', 'False'], type=str, help='---')
     parser.add_argument('--root_sever', type=str, default=r'/root/my_data/data_set/STEPMillion/STEPMillion_pack{pack_idx}', help='root of dataset')
     parser.add_argument('--root_local', type=str, default=r'D:\document\DeepLearning\DataSet\STEPMillion\STEPMillion_{pack_idx}\STEPMillion_pack{pack_idx}', help='root of dataset')
@@ -114,7 +115,6 @@ def main(args):
     if not args.use_cpu:
         predictor = predictor.cuda()
 
-    # args.optimizer='Adam'
     if args.optimizer == 'Adam':
         optimizer = torch.optim.Adam(
             predictor.parameters(),
@@ -130,54 +130,119 @@ def main(args):
     num_batch = len(train_dataloader)
 
     '''TRANING'''
-    for epoch in range(args.epoch):
-        print(f'current epoch: {epoch}/{args.epoch}')
-        predictor = predictor.train()
+    if args.is_train == 'True':
+        is_train = True
+    else:
+        is_train = False
 
-        for batch_id, data in enumerate(train_dataloader, 0):
-            xyz, eula_angle_label, nearby_label, meta_type_label = data[0], data[-3], data[-2], data[-1]
-            bs, n_points, _ = xyz.size()
-            n_items_batch = bs * n_points
+    if is_train:
+        print(Fore.BLACK + Back.GREEN + 'training mode')
 
-            if not args.use_cpu:
-                xyz, eula_angle_label, nearby_label, meta_type_label = xyz.float().cuda(), eula_angle_label.float().cuda(), nearby_label.long().cuda(), meta_type_label.long().cuda()
-            else:
-                xyz, eula_angle_label, nearby_label, meta_type_label = xyz.float(), eula_angle_label.float(), nearby_label.long(), meta_type_label.long()
+        for epoch in range(args.epoch):
+            print(f'current epoch: {epoch}/{args.epoch}')
+            predictor = predictor.train()
 
-            optimizer.zero_grad()
-            pred_eula_angle, pred_edge_nearby, pred_meta_type = predictor(xyz)
+            for batch_id, data in enumerate(train_dataloader, 0):
+                xyz, eula_angle_label, nearby_label, meta_type_label = data[0], data[-3], data[-2], data[-1]
+                bs, n_points, _ = xyz.size()
+                n_items_batch = bs * n_points
 
-            # vis_pointcloudattr(point_set[0, :, :].detach().cpu().numpy(), np.argmax(pred_meta_type[0, :, :].detach().cpu().numpy(), axis=1))
+                if not args.use_cpu:
+                    xyz, eula_angle_label, nearby_label, meta_type_label = xyz.float().cuda(), eula_angle_label.float().cuda(), nearby_label.long().cuda(), meta_type_label.long().cuda()
+                else:
+                    xyz, eula_angle_label, nearby_label, meta_type_label = xyz.float(), eula_angle_label.float(), nearby_label.long(), meta_type_label.long()
 
-            loss_eula = F.mse_loss(eula_angle_label, pred_eula_angle)
+                optimizer.zero_grad()
+                pred_eula_angle, pred_edge_nearby, pred_meta_type = predictor(xyz)
 
-            pred_edge_nearby = pred_edge_nearby.contiguous().view(-1, 2)
-            nearby_label = nearby_label.view(-1)
-            loss_nearby = F.nll_loss(pred_edge_nearby, nearby_label)
+                # vis_pointcloudattr(point_set[0, :, :].detach().cpu().numpy(), np.argmax(pred_meta_type[0, :, :].detach().cpu().numpy(), axis=1))
 
-            pred_meta_type = pred_meta_type.contiguous().view(-1, args.n_metatype)
-            meta_type_label = meta_type_label.view(-1)
-            loss_metatype = F.nll_loss(pred_meta_type, meta_type_label)
+                loss_eula = F.mse_loss(eula_angle_label, pred_eula_angle)
 
-            loss_all = loss_eula + loss_nearby + loss_metatype
+                pred_edge_nearby = pred_edge_nearby.contiguous().view(-1, 2)
+                nearby_label = nearby_label.view(-1)
+                loss_nearby = F.nll_loss(pred_edge_nearby, nearby_label)
 
-            loss_all.backward()
-            optimizer.step()
+                pred_meta_type = pred_meta_type.contiguous().view(-1, args.n_metatype)
+                meta_type_label = meta_type_label.view(-1)
+                loss_metatype = F.nll_loss(pred_meta_type, meta_type_label)
 
-            # accu
-            choice_nearby = pred_edge_nearby.data.max(1)[1]
-            correct_nearby = choice_nearby.eq(nearby_label.data).cpu().sum()
-            choice_meta_type = pred_meta_type.data.max(1)[1]
-            correct_meta_type = choice_meta_type.eq(meta_type_label.data).cpu().sum()
+                loss_all = loss_eula + loss_nearby + loss_metatype
 
-            log_str = f'train_loss\t{loss_all.item()}\teula_loss\t{loss_eula.item()}\tnearby_loss\t{loss_nearby.item()}\tmetatype_loss\t{loss_metatype.item()}\tnearby_accu\t{correct_nearby.item() / float(n_items_batch)}\tmeta_type_accu\t{correct_meta_type.item() / float(n_items_batch)}'
+                loss_all.backward()
+                optimizer.step()
+
+                # accu
+                choice_nearby = pred_edge_nearby.data.max(1)[1]
+                correct_nearby = choice_nearby.eq(nearby_label.data).cpu().sum()
+                choice_meta_type = pred_meta_type.data.max(1)[1]
+                correct_meta_type = choice_meta_type.eq(meta_type_label.data).cpu().sum()
+
+                log_str = f'train_loss\t{loss_all.item()}\teula_loss\t{loss_eula.item()}\tnearby_loss\t{loss_nearby.item()}\tmetatype_loss\t{loss_metatype.item()}\tnearby_accu\t{correct_nearby.item() / float(n_items_batch)}\tmeta_type_accu\t{correct_meta_type.item() / float(n_items_batch)}'
+                logger.info(log_str)
+
+                print_str = f'[{epoch}: {batch_id}/{num_batch}] train loss: {loss_all.item()}, eula loss: {loss_eula.item()}, nearby loss: {loss_nearby.item()},metatype loss: {loss_metatype.item()}, nearby accu: {correct_nearby.item() / float(n_items_batch)}, meta type accu: {correct_meta_type.item() / float(n_items_batch)}'
+                print(print_str)
+
+            scheduler.step()
+            torch.save(predictor.state_dict(), model_savepth)
+    else:
+        print(Fore.BLACK + Back.GREEN + 'eval mode')
+
+        with torch.no_grad():
+            predictor = predictor.eval()
+            euler_loss_set = []
+            nearby_acc_set = []
+            meta_acc_set = []
+
+            for batch_id, data in enumerate(train_dataloader, 0):
+                xyz, eula_angle_label, nearby_label, meta_type_label = data[0], data[-3], data[-2], data[-1]
+                bs, n_points, _ = xyz.size()
+                n_items_batch = bs * n_points
+
+                if not args.use_cpu:
+                    xyz, eula_angle_label, nearby_label, meta_type_label = xyz.float().cuda(), eula_angle_label.float().cuda(), nearby_label.long().cuda(), meta_type_label.long().cuda()
+                else:
+                    xyz, eula_angle_label, nearby_label, meta_type_label = xyz.float(), eula_angle_label.float(), nearby_label.long(), meta_type_label.long()
+
+                pred_eula_angle, pred_edge_nearby, pred_meta_type = predictor(xyz)
+
+                loss_eula = F.mse_loss(eula_angle_label, pred_eula_angle)
+                pred_edge_nearby = pred_edge_nearby.contiguous().view(-1, 2)
+                nearby_label = nearby_label.view(-1)
+
+                pred_meta_type = pred_meta_type.contiguous().view(-1, args.n_metatype)
+                meta_type_label = meta_type_label.view(-1)
+
+                # accu
+                choice_nearby = pred_edge_nearby.data.max(1)[1]
+                correct_nearby = choice_nearby.eq(nearby_label.data).cpu().sum()
+                choice_meta_type = pred_meta_type.data.max(1)[1]
+                correct_meta_type = choice_meta_type.eq(meta_type_label.data).cpu().sum()
+
+                euler_loss = loss_eula.item()
+                nearby_acc = correct_nearby.item() / float(n_items_batch)
+                meta_acc = correct_meta_type.item() / float(n_items_batch)
+
+                euler_loss_set.append(euler_loss)
+                nearby_acc_set.append(nearby_acc)
+                meta_acc_set.append(meta_acc)
+
+                log_str = f'eula_loss\t{euler_loss}\tnearby_accu\t{nearby_acc}\tmeta_type_accu\t{meta_acc}'
+                logger.info(log_str)
+
+                print_str = f'[eula loss: {euler_loss}, nearby accu: {nearby_acc}, meta type accu: {meta_acc}'
+                print(print_str)
+
+            euler_loss_all = np.mean(euler_loss_set)
+            nearby_acc_all = np.mean(nearby_acc_set)
+            meta_acc_all = np.mean(meta_acc_set)
+
+            log_str = f'eula_loss_all\t{euler_loss_all}\tnearby_accu_all\t{nearby_acc_all}\tmeta_type_accu_all\t{meta_acc_all}'
             logger.info(log_str)
 
-            print_str = f'[{epoch}: {batch_id}/{num_batch}] train loss: {loss_all.item()}, eula loss: {loss_eula.item()}, nearby loss: {loss_nearby.item()},metatype loss: {loss_metatype.item()}, nearby accu: {correct_nearby.item() / float(n_items_batch)}, meta type accu: {correct_meta_type.item() / float(n_items_batch)}'
+            print_str = f'[eula loss all: {euler_loss_all}, nearby accu all: {nearby_acc_all}, meta type accu all: {meta_acc_all}'
             print(print_str)
-
-        scheduler.step()
-        torch.save(predictor.state_dict(), model_savepth)
 
 
 def clear_log(log_dir):
