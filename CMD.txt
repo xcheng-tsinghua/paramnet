@@ -43,4 +43,4 @@ nohup python train_cls.py --bs=32 --local=False
 python train_cst_pred.py --abc_pack=1 && python train_cst_pred.py --abc_pack=2 && python train_cst_pred.py --abc_pack=3 && python train_cst_pred.py --abc_pack=4 && python train_cst_pred.py --abc_pack=5 && python train_cst_pred.py --abc_pack=6 && python train_cst_pred.py --abc_pack=7 && python train_cst_pred.py --abc_pack=8 && python train_cst_pred.py --abc_pack=9 && python train_cst_pred.py --abc_pack=10 && python train_cst_pred.py --abc_pack=11 && python train_cst_pred.py --abc_pack=12 && python train_cst_pred.py --abc_pack=13 && python train_cst_pred.py --abc_pack=14 && python train_cst_pred.py --abc_pack=15 && python train_cst_pred.py --abc_pack=16 && python train_cst_pred.py --abc_pack=17 && python train_cst_pred.py --abc_pack=18 && python train_cst_pred.py --abc_pack=19
 
 
-python train_cst_pred.py --abc_pack=20 --is_train=False
+python train_cst_pred.py --is_train=False

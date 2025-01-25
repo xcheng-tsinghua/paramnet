@@ -25,8 +25,8 @@ import numpy as np
 from data_utils.ParamDataLoader import ParamDataLoader
 from data_utils.ParamDataLoader import MCBDataLoader, STEPMillionDataLoader
 
-# from models.TriFeaPred_OrigValid import TriFeaPred_OrigValid as cst_pcd
-from models.parsenet import PrimitivesEmbeddingDGCNGn as cst_pcd
+from models.TriFeaPred_OrigValid import TriFeaPred_OrigValid as cst_pcd
+# from models.parsenet import PrimitivesEmbeddingDGCNGn as cst_pcd
 
 
 def parse_args():
