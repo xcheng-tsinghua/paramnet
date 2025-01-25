@@ -45,19 +45,21 @@ def parse_args():
     parser.add_argument('--workers', type=int, default=10, help='dataloader workers')
     parser.add_argument('--save_str', type=str, default='parsenet', help='dataloader workers')
 
-    parser.add_argument('--abc_pack', type=int, default=1, help='dataloader workers')
+    parser.add_argument('--abc_pack', type=int, default=-1, help='dataloader workers')
 
     parser.add_argument('--is_train', default='True', choices=['True', 'False'], type=str, help='---')
     parser.add_argument('--local', default='False', choices=['True', 'False'], type=str, help='---')
-    parser.add_argument('--root_sever', type=str, default=r'/root/my_data/data_set/STEPMillion/STEPMillion_pack{pack_idx}', help='root of dataset')
-    parser.add_argument('--root_local', type=str, default=r'D:\document\DeepLearning\DataSet\STEPMillion\STEPMillion_{pack_idx}\STEPMillion_pack{pack_idx}', help='root of dataset')
+    parser.add_argument('--root_sever', type=str,
+                        default=r'/root/my_data/data_set/STEP20000_Hammersley_2000', help='root of dataset')
+    parser.add_argument('--root_local', type=str,
+                        default=r'D:\document\DeepLearning\DataSet\STEP20000_Hammersley_2000', help='root of dataset')
 
     # Parametric20000
     # sever: r'/root/my_data/data_set/STEP20000_Hammersley_2000'
     # local: r'D:\document\DeepLearning\DataSet\STEP20000_Hammersley_2000'
     # ABC
-    # sever: r'/root/my_data/data_set/STEPMillion/STEPMillion_pack1'
-    # local: r'D:\document\DeepLearning\DataSet\STEPMillion\STEPMillion_1\STEPMillion_pack1'
+    # sever: r'/root/my_data/data_set/STEPMillion/STEPMillion_pack{pack_idx}/overall'
+    # local: r'D:\document\DeepLearning\DataSet\STEPMillion\STEPMillion_{pack_idx}\STEPMillion_pack{pack_idx}\overall'
 
     args = parser.parse_args()
     print(args)
@@ -95,7 +97,9 @@ def main(args):
         data_root = args.root_sever
 
     abc_pack = args.abc_pack
-    data_root = str(data_root).replace('{pack_idx}', str(abc_pack))
+    if not abc_pack == -1:
+        print(Fore.BLACK + Back.GREEN + f'execute ABC pack trans to pack {abc_pack}')
+        data_root = str(data_root).replace('{pack_idx}', str(abc_pack))
 
     # train_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, data_augmentation=True, is_train=True, is_back_addattr=True)
     train_dataset = STEPMillionDataLoader(root=data_root, npoints=args.num_point, data_augmentation=True)
