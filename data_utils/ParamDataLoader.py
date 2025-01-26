@@ -122,6 +122,109 @@ class ParamDataLoader(Dataset):
         return len(self.classes)
 
 
+class PrismCuboidDataLoader(Dataset):
+    '''
+    棱柱和长方体点云数据集
+    返回：
+    ① 点
+    ② 类型
+    ③ 约束矩阵
+    读取数据：前三列为xyz，最后一列为约束
+    x y z c
+    x y z c
+    ...
+    x y z c
+    '''
+    def __init__(self,
+                 root=r'D:\document\DeepLearning\ParPartsNetWork\DataSetNew', # 数据集文件夹路径
+                 npoints=2500, # 每个点云文件的点数
+                 is_train=True, # 判断返回训练数据集还是测试集
+                 data_augmentation=False, # 是否加噪音
+                 prism_angle=50, # [50, 60, 70, 80, 82, 85, 87, 89]
+                 instance_all=5000  # 单个类别的点云总数（训练集+测试集）
+                 ):
+        self.npoints = npoints
+        self.data_augmentation = data_augmentation
+        self.instance_all = instance_all
+        self.root = root
+        self.prism_angle = prism_angle
+
+        if is_train:
+            file_ind = os.path.join(root, 'train_files.txt')
+        else:
+            file_ind = os.path.join(root, 'test_files.txt')
+
+        print('index file path: ', file_ind)
+
+        self.classes = [0, 1]
+        self.datapath = []
+        with open(file_ind, 'r', encoding="utf-8") as f:
+            for line in f:
+                current_line = line.strip()
+                idx_from_line = int(current_line)
+
+                cls, file_root = self.get_cls_filepth(idx_from_line)
+                self.datapath.append((cls, file_root))
+
+        print('instance all:', len(self.datapath))
+
+    def get_cls_filepth(self, idx_from_idx_file: int):
+        """
+        从索引文件的序号推出对应文件
+        其中 0 <= idx < instance_all 的为 cuboid，文件名为 PointCloud{idx}.txt
+        其中 instance_all <= idx < 2 * instance_all 的为 prism，文件名为 PointCloud{idx-instance_all}.txt
+        点云的类别：cuboid 用整形数字0表示，prism 用整形数字1表示
+        """
+        if idx_from_idx_file < self.instance_all:
+            cls = 0
+            file_root = os.path.join(self.root, 'cuboid', f'PointCloud{idx_from_idx_file}.txt')
+        else:
+            cls = 1
+            file_root = os.path.join(self.root, f'prism{self.prism_angle}', f'PointCloud{idx_from_idx_file - self.instance_all}.txt')
+
+        return cls, file_root
+
+    def __getitem__(self, index):  # 作用为输出点云中点的三维坐标及对应类别，类型均为tensor，类别为1×1的矩阵
+        fn = self.datapath[index]  # (‘plane’, Path1). fn:一维元组，fn[0]：‘plane'或者'car'，fn[1]：对应的点云文件路径
+        cls = fn[0]  # 表示类别的整形数字。 self.classes：键：‘plane'或者'car'，值：用于表示其类型的整形数字 0,1
+
+        point_set = np.loadtxt(fn[1])  # n*4 的矩阵,存储点数据,前三列为xyz,最后一列为约束c,------------------
+
+        try:
+            choice = np.random.choice(point_set.shape[0], self.npoints, replace=False)
+        except:
+            print('捕获异常时的point_set.shape[0]：', point_set.shape[0])
+            print('捕获出错时的文件：', fn[0], '------', fn[1])
+            exit('except a error')
+
+        # 从读取到的点云文件中随机取指定数量的点
+        point_set = point_set[choice, :]
+
+        # 点坐标
+        xyz = point_set[:, :3]
+        cst = point_set[:, 3]
+
+        # 先减去平均点，再除最大距离，即进行位置和大小的归一化
+        # center # np.mean() 返回一个1*x的矩阵，axis=0 求每列的均值，axis=1，求每行的均值
+        xyz = xyz - np.expand_dims(np.mean(xyz, axis=0), 0) # 实测是否加expand_dims效果一样
+        dist = np.max(np.sqrt(np.sum(xyz ** 2, axis=1)), 0)
+        xyz = xyz / dist  # scale
+
+        if self.data_augmentation:  # 随机旋转及加上正态分布噪音
+            # theta = np.random.uniform(0, np.pi * 2)
+            # rotation_matrix = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
+            # xyz[:, [0, 2]] = xyz[:, [0, 2]].dot(rotation_matrix)  # random rotation # 仅仅是x，y分量作旋转-----------
+            xyz += np.random.normal(0, 0.02, size=xyz.shape)  # random jitter # 所有分量加正态分布随机数
+
+        return xyz, cls, cst
+
+    def __len__(self):
+        return len(self.datapath)
+
+    def n_classes(self):
+        return self.classes
+
+
 class STEPMillionDataLoader(Dataset):
     '''参数化带约束草图数据集，parametric PointNet dataset
     返回：

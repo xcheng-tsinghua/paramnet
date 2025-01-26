@@ -9,6 +9,9 @@ import torch.nn.functional as F
 import utils
 
 
+surfaceknn = False
+
+
 def square_distance(src, dst):
     """
     Calculate Euclid distance between each two points.
@@ -158,8 +161,10 @@ def sample_and_group(n_center, n_near, xyz, eula_angle, edge_nearby, meta_type, 
     """
     # xyz: [24, 1024, 3], B: batch_size, N: number of points, C: channels
 
-    idx_surfknn_all = utils.surface_knn(xyz, n_near, 10)
-    # idx_surfknn_all = utils.get_neighbor_index(xyz, n_near)
+    if surfaceknn:
+        idx_surfknn_all = utils.surface_knn(xyz, n_near, 10)
+    else:
+        idx_surfknn_all = utils.get_neighbor_index(xyz, n_near)
 
     if n_center is None:
         center_xyz = xyz
