@@ -251,6 +251,7 @@ def main(args):
             optimizer.zero_grad()
 
             pred = classifier(points, eula_angle_label, nearby_label, meta_type_label)
+            print(pred.size())
             print('-----------------------------', pred)
             loss = F.nll_loss(pred, target)
 
@@ -310,6 +311,8 @@ def main(args):
 
                 all_preds.append(pred.detach().cpu().numpy())
                 all_labels.append(target.detach().cpu().numpy())
+
+                print('------------', target.detach().cpu().numpy())
 
                 pred_choice = pred.data.max(1)[1]
                 correct = pred_choice.eq(target.data).cpu().sum()
