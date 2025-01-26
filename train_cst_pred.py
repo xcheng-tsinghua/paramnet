@@ -51,9 +51,11 @@ def parse_args():
     parser.add_argument('--is_train', default='True', choices=['True', 'False'], type=str, help='---')
     parser.add_argument('--local', default='False', choices=['True', 'False'], type=str, help='---')
     parser.add_argument('--root_sever', type=str,
-                        default=r'/root/my_data/data_set/STEPMillion/STEPMillion_pack{pack_idx}/overall', help='root of dataset')
+                        default=r'/root/my_data/data_set/STEPMillion/STEPMillion_pack{pack_idx}/overall',
+                        help='root of dataset')
     parser.add_argument('--root_local', type=str,
-                        default=r'D:\document\DeepLearning\DataSet\STEPMillion\STEPMillion_{pack_idx}\STEPMillion_pack{pack_idx}\overall', help='root of dataset')
+                        default=r'D:\document\DeepLearning\DataSet\STEPMillion\STEPMillion_{pack_idx}\STEPMillion_pack{pack_idx}\overall',
+                        help='root of dataset')
 
     # Parametric20000
     # sever: r'/root/my_data/data_set/STEP20000_Hammersley_2000'

@@ -49,7 +49,13 @@ def parse_args():
     parser.add_argument('--is_use_pred_addattr', type=str, default='False', choices=['True', 'False'], help='---') # 点数量
     parser.add_argument('--save_str', type=str, default='ca_final_e20000_labelattr', help='---') # 点数量
 
-    parser.add_argument('--root_dataset', type=str, default=r'D:\document\DeepLearning\DataSet\STEP20000_Hammersley_2000', help='root of dataset')
+    parser.add_argument('--local', default='False', choices=['True', 'False'], type=str, help='---')
+    parser.add_argument('--root_sever', type=str,
+                        default=r'/root/my_data/data_set/STEP20000_Hammersley_2000',
+                        help='root of dataset')
+    parser.add_argument('--root_local', type=str,
+                        default=r'D:\document\DeepLearning\DataSet\STEP20000_Hammersley_2000',
+                        help='root of dataset')
 
     # 参数化数据集：D:/document/DeepLearning/DataSet/data_set_p2500_n10000
     # 参数化数据集(新迪)：r'D:\document\DeepLearning\ParPartsNetWork\dataset_xindi\pointcloud'
@@ -149,8 +155,13 @@ def main(args):
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
 
     # 定义数据集，训练集及对应加载器
-    train_dataset = MCBDataLoader(root=args.root_dataset, npoints=args.num_point, is_train=True, data_augmentation=False, is_back_addattr=True)
-    test_dataset = MCBDataLoader(root=args.root_dataset, npoints=args.num_point, is_train=False, data_augmentation=False, is_back_addattr=True)
+    if args.local == 'True':
+        data_root = args.root_local
+    else:
+        data_root = args.root_sever
+
+    train_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, is_train=True, data_augmentation=False, is_back_addattr=True)
+    test_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, is_train=False, data_augmentation=False, is_back_addattr=True)
     num_class = len(train_dataset.classes)
 
     # sampler = torch.utils.data.RandomSampler(train_dataset, num_samples=32, replacement=False)  # 随机选取 100 个样本
@@ -181,6 +192,8 @@ def main(args):
         except:
             print(Fore.GREEN + 'load param attr predictor failed')
             exit(1)
+    else:
+        print(Fore.GREEN + 'use label attr')
 
     classifier.apply(inplace_relu)
     classifier = classifier.cuda()
@@ -227,6 +240,11 @@ def main(args):
 
             # 梯度置为零，否则梯度会累加
             optimizer.zero_grad()
+
+            # 将输入的约束值为零，以回答审稿人的问题
+            eula_angle_label = eula_angle_label * 0
+            nearby_label = nearby_label * 0
+            meta_type_label = meta_type_label * 0
 
             pred = classifier(points, eula_angle_label, nearby_label, meta_type_label)
             loss = F.nll_loss(pred, target)
@@ -282,6 +300,11 @@ def main(args):
                     # 将标签转化为 one-hot
                     nearby_label = F.one_hot(nearby_label, 2)
                     meta_type_label = F.one_hot(meta_type_label, args.n_metatype)
+
+                # 将输入的约束值为零，以回答审稿人的问题
+                eula_angle_label = eula_angle_label * 0
+                nearby_label = nearby_label * 0
+                meta_type_label = meta_type_label * 0
 
                 pred = classifier(points, eula_angle_label, nearby_label, meta_type_label)
 
