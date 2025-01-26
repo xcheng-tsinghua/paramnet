@@ -117,6 +117,9 @@ class PrimitivesEmbeddingDGCNGn(nn.Module):
 
     def __init__(self, n_points_all, n_metatype):
         super(PrimitivesEmbeddingDGCNGn, self).__init__()
+
+        print('---------------parsenet imported-------------------')
+
         self.encoder = DGCNNEncoderGn(input_channels=3, nn_nb=80)
         self.drop = 0.0
 

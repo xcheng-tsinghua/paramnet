@@ -26,8 +26,8 @@ from data_utils.ParamDataLoader import ParamDataLoader
 from data_utils.ParamDataLoader import MCBDataLoader, STEPMillionDataLoader
 
 # from models.TriFeaPred_OrigValid import TriFeaPred_OrigValid as cst_pcd
-from models.hpnet import PrimitiveNet as cst_pcd
-# from models.parsenet import PrimitivesEmbeddingDGCNGn as cst_pcd
+# from models.hpnet import PrimitiveNet as cst_pcd
+from models.parsenet import PrimitivesEmbeddingDGCNGn as cst_pcd
 
 
 def parse_args():
@@ -44,7 +44,7 @@ def parse_args():
     parser.add_argument('--decay_rate', type=float, default=1e-4, help='decay rate')
     parser.add_argument('--n_metatype', type=int, default=4, help='number of considered meta type')  # 计算约束时考虑的基元数, [0-13)共13种
     parser.add_argument('--workers', type=int, default=10, help='dataloader workers')
-    parser.add_argument('--save_str', type=str, default='hpnet', help='dataloader workers')
+    parser.add_argument('--save_str', type=str, default='parsenet', help='dataloader workers')
 
     parser.add_argument('--abc_pack', type=int, default=-1, help='dataloader workers')
 
