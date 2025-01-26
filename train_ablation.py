@@ -251,6 +251,7 @@ def main(args):
             optimizer.zero_grad()
 
             pred = classifier(points, eula_angle_label, nearby_label, meta_type_label)
+            print('-----------------------------', pred)
             loss = F.nll_loss(pred, target)
 
             # 利用loss更新参数
