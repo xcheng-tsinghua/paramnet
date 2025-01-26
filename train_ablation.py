@@ -102,7 +102,7 @@ def mean_average_precision(all_labels: list, all_preds: list, num_class: int):
     all_preds = np.vstack(all_preds)  # 形状为 [total_samples, n_classes]
     all_labels = np.hstack(all_labels)  # 形状为 [total_samples]
 
-    print('-----------------------', all_preds.shape)
+
     print('-----------------------', all_labels.shape)
     print('-----------------------', num_class)
 
@@ -110,6 +110,7 @@ def mean_average_precision(all_labels: list, all_preds: list, num_class: int):
     all_labels_bin = label_binarize(all_labels, classes=np.arange(num_class))
 
     print('-----------------------', all_labels_bin.shape)
+    print('-----------------------', all_labels_bin)
 
     # 计算每个类别的AP
     ap_scores = []
@@ -251,8 +252,6 @@ def main(args):
             optimizer.zero_grad()
 
             pred = classifier(points, eula_angle_label, nearby_label, meta_type_label)
-            print(pred.size())
-            print('-----------------------------', pred)
             loss = F.nll_loss(pred, target)
 
             # 利用loss更新参数
@@ -311,8 +310,6 @@ def main(args):
 
                 all_preds.append(pred.detach().cpu().numpy())
                 all_labels.append(target.detach().cpu().numpy())
-
-                print('------------', target.detach().cpu().numpy())
 
                 pred_choice = pred.data.max(1)[1]
                 correct = pred_choice.eq(target.data).cpu().sum()
