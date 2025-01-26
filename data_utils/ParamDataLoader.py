@@ -137,7 +137,7 @@ class PrismCuboidDataLoader(Dataset):
     '''
     def __init__(self,
                  root=r'D:\document\DeepLearning\ParPartsNetWork\DataSetNew', # 数据集文件夹路径
-                 npoints=2500, # 每个点云文件的点数
+                 npoints=2000, # 每个点云文件的点数
                  is_train=True, # 判断返回训练数据集还是测试集
                  data_augmentation=False, # 是否加噪音
                  prism_angle=50, # [50, 60, 70, 80, 82, 85, 87, 89]
@@ -150,9 +150,9 @@ class PrismCuboidDataLoader(Dataset):
         self.prism_angle = prism_angle
 
         if is_train:
-            file_ind = os.path.join(root, 'train_files.txt')
+            file_ind = os.path.join(root, 'train_80_5000.txt')
         else:
-            file_ind = os.path.join(root, 'test_files.txt')
+            file_ind = os.path.join(root, 'eval_80_5000.txt')
 
         print('index file path: ', file_ind)
 

@@ -28,7 +28,7 @@ from sklearn.preprocessing import label_binarize
 from colorama import Fore, Back, Style, init
 
 # 自建模块
-from data_utils.ParamDataLoader import MCBDataLoader
+from data_utils.ParamDataLoader import MCBDataLoader, PrismCuboidDataLoader
 from data_utils.ParamDataLoader import save_confusion_mat
 from models.CrossAttention_Cls import CrossAttention_Cls
 from models.TriFeaPred_OrigValid import TriFeaPred_OrigValid
@@ -47,18 +47,19 @@ def parse_args():
     parser.add_argument('--num_point', type=int, default=2000, help='Point Number') # 点数量
 
     parser.add_argument('--is_use_pred_addattr', type=str, default='False', choices=['True', 'False'], help='---') # 点数量
-    parser.add_argument('--save_str', type=str, default='prism_cuboid', help='---') # 点数量
+    parser.add_argument('--save_str', type=str, default='prism_cuboid', help='---')
 
-
+    parser.add_argument('--prism', type=int, default=50, help='---')
 
     parser.add_argument('--local', default='False', choices=['True', 'False'], type=str, help='---')
     parser.add_argument('--root_sever', type=str,
-                        default=r'/root/my_data/data_set/STEP20000_Hammersley_2000',
+                        default=r'/root/my_data/data_set/prism_cuboid_p2500_n10000',
                         help='root of dataset')
     parser.add_argument('--root_local', type=str,
                         default=r'D:\document\DeepLearning\DataSet\STEP20000_Hammersley_2000',
                         help='root of dataset')
 
+    # 棱柱长方体数据集（服务器）：/root/my_data/data_set/prism_cuboid_p2500_n10000
     # 参数化数据集：D:/document/DeepLearning/DataSet/data_set_p2500_n10000
     # 参数化数据集(新迪)：r'D:\document\DeepLearning\ParPartsNetWork\dataset_xindi\pointcloud'
     # 参数化数据集(新迪，服务器)：r'/opt/data/private/data_set/PointCloud_Xindi_V2/'
@@ -162,8 +163,8 @@ def main(args):
     else:
         data_root = args.root_sever
 
-    train_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, is_train=True, data_augmentation=False, is_back_addattr=True)
-    test_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, is_train=False, data_augmentation=False, is_back_addattr=True)
+    train_dataset = PrismCuboidDataLoader(root=data_root, npoints=args.num_point, is_train=True, data_augmentation=False)
+    test_dataset = PrismCuboidDataLoader(root=data_root, npoints=args.num_point, is_train=False, data_augmentation=False)
     num_class = len(train_dataset.classes)
 
     trainDataLoader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4)
