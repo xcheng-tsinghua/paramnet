@@ -102,13 +102,16 @@ def mean_average_precision(all_labels: list, all_preds: list, num_class: int):
     all_preds = np.vstack(all_preds)  # 形状为 [total_samples, n_classes]
     all_labels = np.hstack(all_labels)  # 形状为 [total_samples]
 
+    all_labels_tensor = torch.tensor(all_labels)
+    all_labels_bin = F.one_hot(all_labels_tensor, num_classes=2)
+    all_labels_bin = all_labels_bin.numpy()
 
     print('-----------------------', all_labels.shape)
     print('-----------------------', all_labels)
     print('-----------------------', num_class)
 
     # 将真实标签转化为one-hot编码 (one-vs-rest)
-    all_labels_bin = label_binarize(all_labels, classes=np.arange(num_class))
+    # all_labels_bin = label_binarize(all_labels, classes=np.arange(num_class))
 
     print('-----------------------', all_labels_bin.shape)
     print('-----------------------', all_labels_bin)
