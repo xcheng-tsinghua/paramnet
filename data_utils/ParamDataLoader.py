@@ -152,7 +152,7 @@ class PrismCuboidDataLoader(Dataset):
         if is_train:
             file_ind = os.path.join(root, 'train_80_5000.txt')
         else:
-            file_ind = os.path.join(root, 'eval_80_5000.txt')
+            file_ind = os.path.join(root, 'eval_20_5000.txt')
 
         print('index file path: ', file_ind)
 
