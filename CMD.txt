@@ -47,4 +47,5 @@ python train_cst_pred.py --is_train=False
 
 python train_cst_pred.py --abc_pack=20 --is_train=False
 
-python train_ablation.py --prism=50
+python train_ablation.py --prism=50 && python train_ablation.py --prism=60 && python train_ablation.py --prism=70 && python train_ablation.py --prism=80 python train_ablation.py --prism=82 && python train_ablation.py --prism=85 && python train_ablation.py --prism=87 && python train_ablation.py --prism=89
+

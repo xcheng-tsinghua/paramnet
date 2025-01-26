@@ -39,14 +39,14 @@ def parse_args():
     # 输入参数如下：
     parser = argparse.ArgumentParser('training')
     parser.add_argument('--gpu', type=str, default='0', help='specify gpu device') # 指定的GPU设备
-    parser.add_argument('--batch_size', type=int, default=30, help='batch size in training') # batch_size
+    parser.add_argument('--batch_size', type=int, default=16, help='batch size in training') # batch_size
     parser.add_argument('--epoch', default=200, type=int, help='number of epoch in training') # 训练的epoch数
     parser.add_argument('--learning_rate', default=1e-4, type=float, help='learning rate in training') # 学习率
     parser.add_argument('--decay_rate', type=float, default=1e-4, help='decay rate')
     parser.add_argument('--n_metatype', type=int, default=4, help='number of considered meta type')  # 计算约束时考虑的基元数
     parser.add_argument('--num_point', type=int, default=2000, help='Point Number') # 点数量
 
-    parser.add_argument('--is_use_pred_addattr', type=str, default='False', choices=['True', 'False'], help='---') # 点数量
+    parser.add_argument('--is_use_pred_addattr', type=str, default='True', choices=['True', 'False'], help='---') # 点数量
     parser.add_argument('--save_str', type=str, default='prism_cuboid', help='---')
 
     parser.add_argument('--prism', type=int, default=50, help='---')
@@ -221,30 +221,23 @@ def main(args):
             points = data[0].float().cuda()
             target = data[1].long().cuda()
 
-            bs, n_pnt, _ = points.size()
-
             # 使用预测属性
-            # if is_use_pred_addattr:
-            #     eula_angle_label, nearby_label, meta_type_label = predictor(points)
-            #     nearby_label, meta_type_label = torch.exp(nearby_label), torch.exp(meta_type_label)
-            #     eula_angle_label, nearby_label, meta_type_label = eula_angle_label.detach(), nearby_label.detach(), meta_type_label.detach()
-            #
-            # else:
-            #     eula_angle_label = data[2].float().cuda()
-            #     nearby_label = data[3].long().cuda()
-            #     meta_type_label = data[4].long().cuda()
-            #
-            #     # 将标签转化为 one-hot
-            #     nearby_label = F.one_hot(nearby_label, 2)
-            #     meta_type_label = F.one_hot(meta_type_label, args.n_metatype)
+            if is_use_pred_addattr:
+                eula_angle_label, nearby_label, meta_type_label = predictor(points)
+                nearby_label, meta_type_label = torch.exp(nearby_label), torch.exp(meta_type_label)
+                eula_angle_label, nearby_label, meta_type_label = eula_angle_label.detach(), nearby_label.detach(), meta_type_label.detach()
+
+            else:
+                eula_angle_label = data[2].float().cuda()
+                nearby_label = data[3].long().cuda()
+                meta_type_label = data[4].long().cuda()
+
+                # 将标签转化为 one-hot
+                nearby_label = F.one_hot(nearby_label, 2)
+                meta_type_label = F.one_hot(meta_type_label, args.n_metatype)
 
             # 梯度置为零，否则梯度会累加
             optimizer.zero_grad()
-
-            # 将输入的约束值为零，以回答审稿人的问题
-            eula_angle_label = torch.zeros((bs, n_pnt, 3)).cuda()
-            nearby_label = torch.zeros((bs, n_pnt, 2)).cuda()
-            meta_type_label = torch.zeros((bs, n_pnt, 4)).cuda()
 
             pred = classifier(points, eula_angle_label, nearby_label, meta_type_label)
             loss = F.nll_loss(pred, target)
@@ -287,28 +280,19 @@ def main(args):
                 points = data[0].float().cuda()
                 target = data[1].long().cuda()
 
-                # if is_use_pred_addattr:
-                #     eula_angle_label, nearby_label, meta_type_label = predictor(points)
-                #     nearby_label, meta_type_label = torch.exp(nearby_label), torch.exp(meta_type_label)
-                #     eula_angle_label, nearby_label, meta_type_label = eula_angle_label.detach(), nearby_label.detach(), meta_type_label.detach()
-                #
-                # else:
-                #     eula_angle_label = data[2].float().cuda()
-                #     nearby_label = data[3].long().cuda()
-                #     meta_type_label = data[4].long().cuda()
-                #
-                #     # 将标签转化为 one-hot
-                #     nearby_label = F.one_hot(nearby_label, 2)
-                #     meta_type_label = F.one_hot(meta_type_label, args.n_metatype)
+                if is_use_pred_addattr:
+                    eula_angle_label, nearby_label, meta_type_label = predictor(points)
+                    nearby_label, meta_type_label = torch.exp(nearby_label), torch.exp(meta_type_label)
+                    eula_angle_label, nearby_label, meta_type_label = eula_angle_label.detach(), nearby_label.detach(), meta_type_label.detach()
 
-                eula_angle_label = torch.zeros((bs, n_pnt, 3)).cuda()
-                nearby_label = torch.zeros((bs, n_pnt, 2)).cuda()
-                meta_type_label = torch.zeros((bs, n_pnt, 4)).cuda()
+                else:
+                    eula_angle_label = data[2].float().cuda()
+                    nearby_label = data[3].long().cuda()
+                    meta_type_label = data[4].long().cuda()
 
-                # 将输入的约束值为零，以回答审稿人的问题
-                eula_angle_label = eula_angle_label * 0
-                nearby_label = nearby_label * 0
-                meta_type_label = meta_type_label * 0
+                    # 将标签转化为 one-hot
+                    nearby_label = F.one_hot(nearby_label, 2)
+                    meta_type_label = F.one_hot(meta_type_label, args.n_metatype)
 
                 pred = classifier(points, eula_angle_label, nearby_label, meta_type_label)
 
