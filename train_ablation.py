@@ -102,6 +102,10 @@ def mean_average_precision(all_labels: list, all_preds: list, num_class: int):
     all_preds = np.vstack(all_preds)  # 形状为 [total_samples, n_classes]
     all_labels = np.hstack(all_labels)  # 形状为 [total_samples]
 
+    print('-----------------------', all_preds.shape)
+    print('-----------------------', all_labels.shape)
+    print('-----------------------', num_class)
+
     # 将真实标签转化为one-hot编码 (one-vs-rest)
     all_labels_bin = label_binarize(all_labels, classes=np.arange(num_class))
 
@@ -167,8 +171,13 @@ def main(args):
     test_dataset = PrismCuboidDataLoader(root=data_root, npoints=args.num_point, is_train=False, data_augmentation=False)
     num_class = len(train_dataset.classes)
 
-    trainDataLoader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4)
-    testDataLoader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
+    sampler = torch.utils.data.RandomSampler(train_dataset, num_samples=32, replacement=False)  # 随机选取 100 个样本
+    trainDataLoader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, num_workers=4, sampler=sampler)
+    sampler = torch.utils.data.RandomSampler(test_dataset, num_samples=32, replacement=False)  # 随机选取 100 个样本
+    testDataLoader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, num_workers=4, sampler=sampler)
+
+    # trainDataLoader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4)
+    # testDataLoader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
 
     '''MODEL LOADING'''
     # 获取分类模型
