@@ -221,28 +221,30 @@ def main(args):
             points = data[0].float().cuda()
             target = data[1].long().cuda()
 
+            bs, n_pnt, _ = points.size()
+
             # 使用预测属性
-            if is_use_pred_addattr:
-                eula_angle_label, nearby_label, meta_type_label = predictor(points)
-                nearby_label, meta_type_label = torch.exp(nearby_label), torch.exp(meta_type_label)
-                eula_angle_label, nearby_label, meta_type_label = eula_angle_label.detach(), nearby_label.detach(), meta_type_label.detach()
-
-            else:
-                eula_angle_label = data[2].float().cuda()
-                nearby_label = data[3].long().cuda()
-                meta_type_label = data[4].long().cuda()
-
-                # 将标签转化为 one-hot
-                nearby_label = F.one_hot(nearby_label, 2)
-                meta_type_label = F.one_hot(meta_type_label, args.n_metatype)
+            # if is_use_pred_addattr:
+            #     eula_angle_label, nearby_label, meta_type_label = predictor(points)
+            #     nearby_label, meta_type_label = torch.exp(nearby_label), torch.exp(meta_type_label)
+            #     eula_angle_label, nearby_label, meta_type_label = eula_angle_label.detach(), nearby_label.detach(), meta_type_label.detach()
+            #
+            # else:
+            #     eula_angle_label = data[2].float().cuda()
+            #     nearby_label = data[3].long().cuda()
+            #     meta_type_label = data[4].long().cuda()
+            #
+            #     # 将标签转化为 one-hot
+            #     nearby_label = F.one_hot(nearby_label, 2)
+            #     meta_type_label = F.one_hot(meta_type_label, args.n_metatype)
 
             # 梯度置为零，否则梯度会累加
             optimizer.zero_grad()
 
             # 将输入的约束值为零，以回答审稿人的问题
-            eula_angle_label = eula_angle_label * 0
-            nearby_label = nearby_label * 0
-            meta_type_label = meta_type_label * 0
+            eula_angle_label = torch.zeros((bs, n_pnt, 3)).cuda()
+            nearby_label = torch.zeros((bs, n_pnt, 2)).cuda()
+            meta_type_label = torch.zeros((bs, n_pnt, 4)).cuda()
 
             pred = classifier(points, eula_angle_label, nearby_label, meta_type_label)
             loss = F.nll_loss(pred, target)
@@ -285,19 +287,23 @@ def main(args):
                 points = data[0].float().cuda()
                 target = data[1].long().cuda()
 
-                if is_use_pred_addattr:
-                    eula_angle_label, nearby_label, meta_type_label = predictor(points)
-                    nearby_label, meta_type_label = torch.exp(nearby_label), torch.exp(meta_type_label)
-                    eula_angle_label, nearby_label, meta_type_label = eula_angle_label.detach(), nearby_label.detach(), meta_type_label.detach()
+                # if is_use_pred_addattr:
+                #     eula_angle_label, nearby_label, meta_type_label = predictor(points)
+                #     nearby_label, meta_type_label = torch.exp(nearby_label), torch.exp(meta_type_label)
+                #     eula_angle_label, nearby_label, meta_type_label = eula_angle_label.detach(), nearby_label.detach(), meta_type_label.detach()
+                #
+                # else:
+                #     eula_angle_label = data[2].float().cuda()
+                #     nearby_label = data[3].long().cuda()
+                #     meta_type_label = data[4].long().cuda()
+                #
+                #     # 将标签转化为 one-hot
+                #     nearby_label = F.one_hot(nearby_label, 2)
+                #     meta_type_label = F.one_hot(meta_type_label, args.n_metatype)
 
-                else:
-                    eula_angle_label = data[2].float().cuda()
-                    nearby_label = data[3].long().cuda()
-                    meta_type_label = data[4].long().cuda()
-
-                    # 将标签转化为 one-hot
-                    nearby_label = F.one_hot(nearby_label, 2)
-                    meta_type_label = F.one_hot(meta_type_label, args.n_metatype)
+                eula_angle_label = torch.zeros((bs, n_pnt, 3)).cuda()
+                nearby_label = torch.zeros((bs, n_pnt, 2)).cuda()
+                meta_type_label = torch.zeros((bs, n_pnt, 4)).cuda()
 
                 # 将输入的约束值为零，以回答审稿人的问题
                 eula_angle_label = eula_angle_label * 0
