@@ -109,6 +109,8 @@ def mean_average_precision(all_labels: list, all_preds: list, num_class: int):
     # 将真实标签转化为one-hot编码 (one-vs-rest)
     all_labels_bin = label_binarize(all_labels, classes=np.arange(num_class))
 
+    print('-----------------------', all_labels_bin.shape)
+
     # 计算每个类别的AP
     ap_scores = []
     for i in range(num_class):
