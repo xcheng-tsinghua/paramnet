@@ -104,6 +104,7 @@ def mean_average_precision(all_labels: list, all_preds: list, num_class: int):
 
 
     print('-----------------------', all_labels.shape)
+    print('-----------------------', all_labels)
     print('-----------------------', num_class)
 
     # 将真实标签转化为one-hot编码 (one-vs-rest)
