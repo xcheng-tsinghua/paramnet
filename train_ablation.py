@@ -50,6 +50,7 @@ def parse_args():
     parser.add_argument('--save_str', type=str, default='prism_cuboid', help='---')
 
     parser.add_argument('--prism', type=int, default=50, help='---')
+    parser.add_argument('--is_train', default='False', choices=['True', 'False'], type=str, help='---')
 
     parser.add_argument('--local', default='False', choices=['True', 'False'], type=str, help='---')
     parser.add_argument('--root_sever', type=str,
@@ -105,16 +106,6 @@ def mean_average_precision(all_labels: list, all_preds: list, num_class: int):
     all_labels_tensor = torch.tensor(all_labels)
     all_labels_bin = F.one_hot(all_labels_tensor, num_classes=2)
     all_labels_bin = all_labels_bin.numpy()
-
-    # print('-----------------------', all_labels.shape)
-    # print('-----------------------', all_labels)
-    # print('-----------------------', num_class)
-
-    # 将真实标签转化为one-hot编码 (one-vs-rest)
-    # all_labels_bin = label_binarize(all_labels, classes=np.arange(num_class))
-
-    # print('-----------------------', all_labels_bin.shape)
-    # print('-----------------------', all_labels_bin)
 
     # 计算每个类别的AP
     ap_scores = []
@@ -224,58 +215,64 @@ def main(args):
     best_instance_accu = -1.0
 
     '''TRANING'''
+    if args.is_train == 'True':
+        is_train = True
+    else:
+        is_train = False
+
     for epoch in range(args.epoch):
-        classifier = classifier.train()
+        if is_train:
+            classifier = classifier.train()
 
-        logstr_epoch = f'Epoch ({epoch + 1}/{args.epoch}):'
+            logstr_epoch = f'Epoch ({epoch + 1}/{args.epoch}):'
 
-        mean_correct = []
-        pred_cls = []
-        target_cls = []
+            mean_correct = []
+            pred_cls = []
+            target_cls = []
 
-        for batch_id, data in tqdm(enumerate(trainDataLoader, 0), total=len(trainDataLoader)):
-            points = data[0].float().cuda()
-            target = data[1].long().cuda()
+            for batch_id, data in tqdm(enumerate(trainDataLoader, 0), total=len(trainDataLoader)):
+                points = data[0].float().cuda()
+                target = data[1].long().cuda()
 
-            # 使用预测属性
-            if is_use_pred_addattr:
-                eula_angle_label, nearby_label, meta_type_label = predictor(points)
-                nearby_label, meta_type_label = torch.exp(nearby_label), torch.exp(meta_type_label)
-                eula_angle_label, nearby_label, meta_type_label = eula_angle_label.detach(), nearby_label.detach(), meta_type_label.detach()
+                # 使用预测属性
+                if is_use_pred_addattr:
+                    eula_angle_label, nearby_label, meta_type_label = predictor(points)
+                    nearby_label, meta_type_label = torch.exp(nearby_label), torch.exp(meta_type_label)
+                    eula_angle_label, nearby_label, meta_type_label = eula_angle_label.detach(), nearby_label.detach(), meta_type_label.detach()
 
-            else:
-                eula_angle_label = data[2].float().cuda()
-                nearby_label = data[3].long().cuda()
-                meta_type_label = data[4].long().cuda()
+                else:
+                    eula_angle_label = data[2].float().cuda()
+                    nearby_label = data[3].long().cuda()
+                    meta_type_label = data[4].long().cuda()
 
-                # 将标签转化为 one-hot
-                nearby_label = F.one_hot(nearby_label, 2)
-                meta_type_label = F.one_hot(meta_type_label, args.n_metatype)
+                    # 将标签转化为 one-hot
+                    nearby_label = F.one_hot(nearby_label, 2)
+                    meta_type_label = F.one_hot(meta_type_label, args.n_metatype)
 
-            # 梯度置为零，否则梯度会累加
-            optimizer.zero_grad()
+                # 梯度置为零，否则梯度会累加
+                optimizer.zero_grad()
 
-            pred = classifier(points, eula_angle_label, nearby_label, meta_type_label)
-            loss = F.nll_loss(pred, target)
+                pred = classifier(points, eula_angle_label, nearby_label, meta_type_label)
+                loss = F.nll_loss(pred, target)
 
-            # 利用loss更新参数
-            loss.backward()
-            optimizer.step()
+                # 利用loss更新参数
+                loss.backward()
+                optimizer.step()
 
-            pred_choice = pred.data.max(1)[1]
-            correct = pred_choice.eq(target.long().data).cpu().sum()
-            mean_correct.append(correct.item() / float(points.size()[0]))
+                pred_choice = pred.data.max(1)[1]
+                correct = pred_choice.eq(target.long().data).cpu().sum()
+                mean_correct.append(correct.item() / float(points.size()[0]))
 
-            pred_cls += pred_choice.tolist()
-            target_cls += target.tolist()
+                pred_cls += pred_choice.tolist()
+                target_cls += target.tolist()
 
-        save_confusion_mat(pred_cls, target_cls, os.path.join(confusion_dir, f'train-{epoch}.png'))
+            save_confusion_mat(pred_cls, target_cls, os.path.join(confusion_dir, f'train-{epoch}.png'))
 
-        acc_over_class = accuracy_over_class(target_cls, pred_cls, num_class)
-        logstr_trainaccu = f'\ttrain_instance_accu:\t{np.mean(mean_correct)}\ttrain_class_accu:\t{acc_over_class}'
+            acc_over_class = accuracy_over_class(target_cls, pred_cls, num_class)
+            logstr_trainaccu = f'\ttrain_instance_accu:\t{np.mean(mean_correct)}\ttrain_class_accu:\t{acc_over_class}'
 
-        scheduler.step()
-        torch.save(classifier.state_dict(), 'model_trained/' + save_str + '.pth')
+            scheduler.step()
+            torch.save(classifier.state_dict(), 'model_trained/' + save_str + '.pth')
 
         with torch.no_grad():
             classifier = classifier.eval()
@@ -340,13 +337,19 @@ def main(args):
             weighted_f1_score = f1_score(target_cls, pred_cls, average='weighted')
 
             accustr = f'\ttest_instance_accuracy\t{acc_over_instance}\ttest_class_accuracy\t{acc_over_class}\ttest_F1_Score\t{macro_f1_score}\tmAP\t{mAP}\twmAP\t{weighted_f1_score}'
-            logger.info(logstr_epoch + logstr_trainaccu + accustr)
-            print(accustr.replace('\t', ' '))
 
-            # 额外保存最好的模型
-            if best_instance_accu < acc_over_class:
-                best_instance_accu = acc_over_class
-                torch.save(classifier.state_dict(), 'model_trained/best_' + save_str + '.pth')
+            if is_train:
+                logger.info(logstr_epoch + logstr_trainaccu + accustr)
+                print(accustr.replace('\t', ' '))
+
+                # 额外保存最好的模型
+                if best_instance_accu < acc_over_class:
+                    best_instance_accu = acc_over_class
+                    torch.save(classifier.state_dict(), 'model_trained/best_' + save_str + '.pth')
+            else:
+                logger.info(accustr)
+                print(accustr.replace('\t', ' '))
+                break
 
 
 if __name__ == '__main__':
