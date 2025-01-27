@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import json
 from tqdm import tqdm
+from colorama import Fore, Back, Style, init
 
 
 class ParamDataLoader(Dataset):
@@ -148,6 +149,8 @@ class PrismCuboidDataLoader(Dataset):
         self.instance_all = instance_all
         self.root = root
         self.prism_angle = prism_angle
+
+        print(Fore.BLACK + Back.BLUE + f'prism angle: {self.prism_angle}')
 
         if is_train:
             file_ind = os.path.join(root, 'train_80_5000.txt')

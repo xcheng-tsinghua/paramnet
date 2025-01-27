@@ -40,7 +40,7 @@ def parse_args():
     parser = argparse.ArgumentParser('training')
     parser.add_argument('--gpu', type=str, default='0', help='specify gpu device') # 指定的GPU设备
     parser.add_argument('--batch_size', type=int, default=16, help='batch size in training') # batch_size
-    parser.add_argument('--epoch', default=35, type=int, help='number of epoch in training') # 训练的epoch数
+    parser.add_argument('--epoch', default=20, type=int, help='number of epoch in training') # 训练的epoch数
     parser.add_argument('--learning_rate', default=1e-4, type=float, help='learning rate in training') # 学习率
     parser.add_argument('--decay_rate', type=float, default=1e-4, help='decay rate')
     parser.add_argument('--n_metatype', type=int, default=4, help='number of considered meta type')  # 计算约束时考虑的基元数
@@ -50,7 +50,7 @@ def parse_args():
     parser.add_argument('--save_str', type=str, default='prism_cuboid', help='---')
 
     parser.add_argument('--prism', type=int, default=50, help='---')
-    parser.add_argument('--is_train', default='False', choices=['True', 'False'], type=str, help='---')
+    parser.add_argument('--is_train', default='True', choices=['True', 'False'], type=str, help='---')
 
     parser.add_argument('--local', default='False', choices=['True', 'False'], type=str, help='---')
     parser.add_argument('--root_sever', type=str,
@@ -165,8 +165,8 @@ def main(args):
     else:
         data_root = args.root_sever
 
-    train_dataset = PrismCuboidDataLoader(root=data_root, npoints=args.num_point, is_train=True, data_augmentation=False)
-    test_dataset = PrismCuboidDataLoader(root=data_root, npoints=args.num_point, is_train=False, data_augmentation=False)
+    train_dataset = PrismCuboidDataLoader(root=data_root, npoints=args.num_point, is_train=True, data_augmentation=False, prism_angle=args.prism)
+    test_dataset = PrismCuboidDataLoader(root=data_root, npoints=args.num_point, is_train=False, data_augmentation=False, prism_angle=args.prism)
     num_class = len(train_dataset.classes)
 
     # sampler = torch.utils.data.RandomSampler(train_dataset, num_samples=32, replacement=False)  # 随机选取 100 个样本
