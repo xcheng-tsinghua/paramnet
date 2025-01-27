@@ -231,7 +231,7 @@ def main(args):
             # nearby_label = nearby_label * 0
             # meta_type_label = meta_type_label * 0
 
-            pred = classifier(points, eula_angle_label, F.one_hot(data[3].long().cuda(), 2), F.one_hot(data[4].long().cuda(), args.n_metatype))
+            pred = classifier(points, data[2].float().cuda(), nearby_label, F.one_hot(data[4].long().cuda(), args.n_metatype))
 
             all_preds.append(pred.detach().cpu().numpy())
             all_labels.append(target.detach().cpu().numpy())

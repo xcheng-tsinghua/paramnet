@@ -50,3 +50,5 @@ python train_cst_pred.py --abc_pack=20 --is_train=False
 python train_ablation.py --prism=50 && python train_ablation.py --prism=60 && python train_ablation.py --prism=70 && python train_ablation.py --prism=80 python train_ablation.py --prism=82 && python train_ablation.py --prism=85 && python train_ablation.py --prism=87 && python train_ablation.py --prism=89
 
 python train_ca_cls.py --rotate=25 && python train_ca_cls.py --rotate=50 && python train_ca_cls.py --rotate=100 && python train_ca_cls.py --rotate=200
+
+python eval_rot_cls.py --rotate=25 && python eval_rot_cls.py --rotate=50 && python eval_rot_cls.py --rotate=100 && python eval_rot_cls.py --rotate=200
