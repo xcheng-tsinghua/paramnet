@@ -313,9 +313,9 @@ def main(args):
                     meta_type_label = F.one_hot(meta_type_label, args.n_metatype)
 
                 # # 将输入的约束值为零，以回答审稿人的问题
-                eula_angle_label = eula_angle_label * 0
-                # nearby_label = nearby_label * 0
-                # meta_type_label = meta_type_label * 0
+                # eula_angle_label = eula_angle_label * 0
+                nearby_label = nearby_label * 0
+                meta_type_label = meta_type_label * 0
 
                 pred = classifier(points, eula_angle_label, nearby_label, meta_type_label)
 
