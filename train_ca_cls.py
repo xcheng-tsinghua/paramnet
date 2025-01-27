@@ -47,7 +47,7 @@ def parse_args():
     parser.add_argument('--num_point', type=int, default=2000, help='Point Number') # 点数量
 
     parser.add_argument('--is_use_pred_addattr', type=str, default='False', choices=['True', 'False'], help='---') # 点数量
-    parser.add_argument('--save_str', type=str, default='ablation_no_cst', help='---')
+    parser.add_argument('--save_str', type=str, default='ablation_no_cst_knn', help='---')
 
     parser.add_argument('--local', default='False', choices=['True', 'False'], type=str, help='---')
     parser.add_argument('--root_sever', type=str,
