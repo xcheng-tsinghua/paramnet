@@ -344,17 +344,21 @@ def main(args):
             macro_f1_score = f1_score(target_cls, pred_cls, average='macro')
             weighted_f1_score = f1_score(target_cls, pred_cls, average='weighted')
 
-            accustr = f'\ttest_instance_accuracy\t{acc_over_instance}\ttest_class_accuracy\t{acc_over_class}\ttest_F1_Score\t{macro_f1_score}\tmAP\t{mAP}\twmAP\t{weighted_f1_score}'
-            logger.info(logstr_epoch + logstr_trainaccu + accustr)
-            print(accustr.replace('\t', ' '))
-
             if is_train:
+                accustr = f'\ttest_instance_accuracy\t{acc_over_instance}\ttest_class_accuracy\t{acc_over_class}\ttest_F1_Score\t{macro_f1_score}\tmAP\t{mAP}\twmAP\t{weighted_f1_score}'
+                logger.info(logstr_epoch + logstr_trainaccu + accustr)
+                print(accustr.replace('\t', ' '))
 
                 # 额外保存最好的模型
                 if best_instance_accu < acc_over_class:
                     best_instance_accu = acc_over_class
                     torch.save(classifier.state_dict(), 'model_trained/best_' + save_str + '.pth')
+
             else:
+                accustr = f'\ttest_instance_accuracy\t{acc_over_instance}\ttest_class_accuracy\t{acc_over_class}\ttest_F1_Score\t{macro_f1_score}\tmAP\t{mAP}\twmAP\t{weighted_f1_score}'
+                logger.info(accustr)
+                print(accustr.replace('\t', ' '))
+
                 break
 
 
