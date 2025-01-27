@@ -320,7 +320,8 @@ class MCBDataLoader(Dataset):
                  is_train=True,
                  npoints=2500,  # 每个点云文件的点数
                  data_augmentation=True,  # 是否加噪音
-                 is_back_addattr=False
+                 is_back_addattr=False,
+                 rotate=0
                  ):
         """
         定位文件的路径如下：
@@ -357,6 +358,7 @@ class MCBDataLoader(Dataset):
         self.npoints = npoints
         self.data_augmentation = data_augmentation
         self.is_back_addattr = is_back_addattr
+        self.rotate = rotate
 
         print('MCB dataset, from:' + root)
 
@@ -414,8 +416,14 @@ class MCBDataLoader(Dataset):
         dist = np.max(np.sqrt(np.sum(point_set ** 2, axis=1)), 0)
         point_set = point_set / dist  # scale
 
-        if self.data_augmentation:  # 随机旋转及加上正态分布噪音
+        if self.data_augmentation:  # 加上正态分布噪音
             point_set += np.random.normal(0, 0.02, size=point_set.shape)  # random jitter # 所有分量加正态分布随机数
+
+        # 沿z轴指定角度旋转
+        if self.rotate:
+            theta = np.radians(self.rotate)
+            rotation_matrix = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
+            point_set[:, [0, 2]] = point_set[:, [0, 2]].dot(rotation_matrix)  # random rotation # 仅仅是x，y分量作旋转-----------
 
         if self.is_back_addattr:
             return point_set, cls, euler, near, meta
@@ -1027,7 +1035,20 @@ def gallery360seg_test():
     print(count_dict)
 
 
+def rotate_points(points, angle_deg):
+    # 将角度转换为弧度
+    angle_rad = np.radians(angle_deg)
 
+    # 旋转矩阵
+    rotation_matrix = np.array([
+        [np.cos(angle_rad), -np.sin(angle_rad), 0],
+        [np.sin(angle_rad), np.cos(angle_rad), 0],
+        [0, 0, 1]
+    ])
+
+    # 将旋转矩阵应用于每个点
+    rotated_points = points.dot(rotation_matrix.T)
+    return rotated_points
 
 
 if __name__ == '__main__':
