@@ -48,7 +48,7 @@ def parse_args():
     parser.add_argument('--n_metatype', type=int, default=4, help='number of considered meta type')  # 计算约束时考虑的基元数
     parser.add_argument('--num_point', type=int, default=2000, help='Point Number') # 点数量
 
-    parser.add_argument('--is_use_pred_addattr', type=str, default='True', choices=['True', 'False'], help='---') # 点数量
+    parser.add_argument('--is_use_pred_addattr', type=str, default='False', choices=['True', 'False'], help='---') # 点数量
     parser.add_argument('--save_str', type=str, default='ca_final', help='---')
     parser.add_argument('--is_train', default='False', choices=['True', 'False'], type=str, help='---')
     parser.add_argument('--rotate', default=0, type=int, help='---')
