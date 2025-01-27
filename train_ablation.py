@@ -214,11 +214,13 @@ def main(args):
 
     best_instance_accu = -1.0
 
-    '''TRANING'''
+    '''TRAINING'''
     if args.is_train == 'True':
         is_train = True
+        print(Fore.GREEN + 'TRAINING')
     else:
         is_train = False
+        print(Fore.GREEN + 'EVALUATING')
 
     for epoch in range(args.epoch):
         if is_train:
