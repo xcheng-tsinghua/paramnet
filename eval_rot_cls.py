@@ -48,9 +48,8 @@ def parse_args():
     parser.add_argument('--n_metatype', type=int, default=4, help='number of considered meta type')  # 计算约束时考虑的基元数
     parser.add_argument('--num_point', type=int, default=2000, help='Point Number') # 点数量
 
-    parser.add_argument('--is_use_pred_addattr', type=str, default='False', choices=['True', 'False'], help='---') # 点数量
+    parser.add_argument('--is_use_pred_addattr', type=str, default='True', choices=['True', 'False'], help='---') # 点数量
     parser.add_argument('--save_str', type=str, default='ca_final', help='---')
-    parser.add_argument('--is_train', default='False', choices=['True', 'False'], type=str, help='---')
     parser.add_argument('--rotate', default=0, type=int, help='---')
 
     parser.add_argument('--local', default='False', choices=['True', 'False'], type=str, help='---')
@@ -164,16 +163,8 @@ def main(args):
     else:
         data_root = args.root_sever
 
-    train_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, is_train=True, data_augmentation=False, is_back_addattr=True, rotate=args.rotate)
     test_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, is_train=False, data_augmentation=False, is_back_addattr=True, rotate=args.rotate)
-    num_class = len(train_dataset.classes)
-
-    # sampler = torch.utils.data.RandomSampler(train_dataset, num_samples=32, replacement=False)  # 随机选取 100 个样本
-    # trainDataLoader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, num_workers=4, sampler=sampler)
-    # sampler = torch.utils.data.RandomSampler(test_dataset, num_samples=32, replacement=False)  # 随机选取 100 个样本
-    # testDataLoader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, num_workers=4, sampler=sampler)
-
-    trainDataLoader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4)
+    num_class = len(test_dataset.classes)
     testDataLoader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
 
     '''MODEL LOADING'''
@@ -202,166 +193,77 @@ def main(args):
     classifier.apply(inplace_relu)
     classifier = classifier.cuda()
 
-    optimizer = torch.optim.Adam(
-        classifier.parameters(),
-        lr=args.learning_rate, # 0.001
-        betas=(0.9, 0.999),
-        eps=1e-08,
-        weight_decay=args.decay_rate # 1e-4
-    )
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.7)
-
-    best_instance_accu = -1.0
-
     '''TRANING'''
-    if args.is_train == 'True':
-        is_train = True
-    else:
-        is_train = False
 
-    for epoch in range(args.epoch):
-        classifier = classifier.train()
+    with torch.no_grad():
+        classifier = classifier.eval()
 
-        logstr_epoch = f'Epoch ({epoch + 1}/{args.epoch}):'
+        # 计算Acc.OverInstance
+        total_correct = 0
+        total_testset = 0
 
-        mean_correct = []
+        # 保存ConfusionMatrix和计算Acc.OverClass
         pred_cls = []
         target_cls = []
 
-        if is_train:
+        # 计算mAP
+        all_preds = []
+        all_labels = []
 
-            for batch_id, data in tqdm(enumerate(trainDataLoader, 0), total=len(trainDataLoader)):
-                points = data[0].float().cuda()
-                target = data[1].long().cuda()
+        for j, data in tqdm(enumerate(testDataLoader), total=len(testDataLoader)):
+            points = data[0].float().cuda()
+            target = data[1].long().cuda()
 
-                # 使用预测属性
-                if is_use_pred_addattr:
-                    eula_angle_label, nearby_label, meta_type_label = predictor(points)
-                    nearby_label, meta_type_label = torch.exp(nearby_label), torch.exp(meta_type_label)
-                    eula_angle_label, nearby_label, meta_type_label = eula_angle_label.detach(), nearby_label.detach(), meta_type_label.detach()
-
-                else:
-                    eula_angle_label = data[2].float().cuda()
-                    nearby_label = data[3].long().cuda()
-                    meta_type_label = data[4].long().cuda()
-
-                    # 将标签转化为 one-hot
-                    nearby_label = F.one_hot(nearby_label, 2)
-                    meta_type_label = F.one_hot(meta_type_label, args.n_metatype)
-
-                # 梯度置为零，否则梯度会累加
-                optimizer.zero_grad()
-
-                # 将输入的约束值为零，以回答审稿人的问题
-                eula_angle_label = eula_angle_label * 0
-                nearby_label = nearby_label * 0
-                meta_type_label = meta_type_label * 0
-
-                pred = classifier(points, eula_angle_label, nearby_label, meta_type_label)
-                loss = F.nll_loss(pred, target)
-
-                # 利用loss更新参数
-                loss.backward()
-                optimizer.step()
-
-                pred_choice = pred.data.max(1)[1]
-                correct = pred_choice.eq(target.long().data).cpu().sum()
-                mean_correct.append(correct.item() / float(points.size()[0]))
-
-                pred_cls += pred_choice.tolist()
-                target_cls += target.tolist()
-
-            save_confusion_mat(pred_cls, target_cls, os.path.join(confusion_dir, f'train-{epoch}.png'))
-
-            acc_over_class = accuracy_over_class(target_cls, pred_cls, num_class)
-            logstr_trainaccu = f'\ttrain_instance_accu:\t{np.mean(mean_correct)}\ttrain_class_accu:\t{acc_over_class}'
-
-            scheduler.step()
-            torch.save(classifier.state_dict(), 'model_trained/' + save_str + '.pth')
-
-        with torch.no_grad():
-            classifier = classifier.eval()
-
-            # 计算Acc.OverInstance
-            total_correct = 0
-            total_testset = 0
-
-            # 保存ConfusionMatrix和计算Acc.OverClass
-            pred_cls = []
-            target_cls = []
-
-            # 计算mAP
-            all_preds = []
-            all_labels = []
-
-            for j, data in tqdm(enumerate(testDataLoader), total=len(testDataLoader)):
-                points = data[0].float().cuda()
-                target = data[1].long().cuda()
-
-                if is_use_pred_addattr:
-                    eula_angle_label, nearby_label, meta_type_label = predictor(points)
-                    nearby_label, meta_type_label = torch.exp(nearby_label), torch.exp(meta_type_label)
-                    eula_angle_label, nearby_label, meta_type_label = eula_angle_label.detach(), nearby_label.detach(), meta_type_label.detach()
-
-                else:
-                    eula_angle_label = data[2].float().cuda()
-                    nearby_label = data[3].long().cuda()
-                    meta_type_label = data[4].long().cuda()
-
-                    # 将标签转化为 one-hot
-                    nearby_label = F.one_hot(nearby_label, 2)
-                    meta_type_label = F.one_hot(meta_type_label, args.n_metatype)
-
-                # # 将输入的约束值为零，以回答审稿人的问题
-                # eula_angle_label = eula_angle_label * 0
-                # nearby_label = nearby_label * 0
-                # meta_type_label = meta_type_label * 0
-
-                pred = classifier(points, eula_angle_label, nearby_label, meta_type_label)
-
-                all_preds.append(pred.detach().cpu().numpy())
-                all_labels.append(target.detach().cpu().numpy())
-
-                pred_choice = pred.data.max(1)[1]
-                correct = pred_choice.eq(target.data).cpu().sum()
-
-                total_correct += correct.item()
-                total_testset += points.size()[0]
-
-                pred_cls += pred_choice.tolist()
-                target_cls += target.tolist()
-
-            save_confusion_mat(pred_cls, target_cls, os.path.join(confusion_dir, f'eval-{epoch}.png'))
-
-            # 计算 mean average precision
-            mAP = mean_average_precision(all_labels, all_preds, num_class)
-
-            # 计算 Acc. over Instance
-            acc_over_instance = total_correct / float(total_testset)
-
-            # 计算 Acc. over Class
-            acc_over_class = accuracy_over_class(target_cls, pred_cls, num_class)
-
-            # 计算 F1-Score
-            macro_f1_score = f1_score(target_cls, pred_cls, average='macro')
-            weighted_f1_score = f1_score(target_cls, pred_cls, average='weighted')
-
-            if is_train:
-                accustr = f'\ttest_instance_accuracy\t{acc_over_instance}\ttest_class_accuracy\t{acc_over_class}\ttest_F1_Score\t{macro_f1_score}\tmAP\t{mAP}\twmAP\t{weighted_f1_score}'
-                logger.info(logstr_epoch + logstr_trainaccu + accustr)
-                print(accustr.replace('\t', ' '))
-
-                # 额外保存最好的模型
-                if best_instance_accu < acc_over_class:
-                    best_instance_accu = acc_over_class
-                    torch.save(classifier.state_dict(), 'model_trained/best_' + save_str + '.pth')
+            if is_use_pred_addattr:
+                eula_angle_label, nearby_label, meta_type_label = predictor(points)
+                nearby_label, meta_type_label = torch.exp(nearby_label), torch.exp(meta_type_label)
+                eula_angle_label, nearby_label, meta_type_label = eula_angle_label.detach(), nearby_label.detach(), meta_type_label.detach()
 
             else:
-                accustr = f'\ttest_instance_accuracy\t{acc_over_instance}\ttest_class_accuracy\t{acc_over_class}\ttest_F1_Score\t{macro_f1_score}\tmAP\t{mAP}\twmAP\t{weighted_f1_score}'
-                logger.info(accustr)
-                print(accustr.replace('\t', ' '))
+                eula_angle_label = data[2].float().cuda()
 
-                break
+                # 将标签转化为 one-hot
+                nearby_label = F.one_hot(data[3].long().cuda(), 2)
+                meta_type_label = F.one_hot(data[4].long().cuda(), args.n_metatype)
+
+            # # 将输入的约束值为零，以回答审稿人的问题
+            # eula_angle_label = eula_angle_label * 0
+            # nearby_label = nearby_label * 0
+            # meta_type_label = meta_type_label * 0
+
+            pred = classifier(points, eula_angle_label, F.one_hot(data[3].long().cuda(), 2), F.one_hot(data[4].long().cuda(), args.n_metatype))
+
+            all_preds.append(pred.detach().cpu().numpy())
+            all_labels.append(target.detach().cpu().numpy())
+
+            pred_choice = pred.data.max(1)[1]
+            correct = pred_choice.eq(target.data).cpu().sum()
+
+            total_correct += correct.item()
+            total_testset += points.size()[0]
+
+            pred_cls += pred_choice.tolist()
+            target_cls += target.tolist()
+
+        save_confusion_mat(pred_cls, target_cls, os.path.join(confusion_dir, f'eval-rot.png'))
+
+        # 计算 mean average precision
+        mAP = mean_average_precision(all_labels, all_preds, num_class)
+
+        # 计算 Acc. over Instance
+        acc_over_instance = total_correct / float(total_testset)
+
+        # 计算 Acc. over Class
+        acc_over_class = accuracy_over_class(target_cls, pred_cls, num_class)
+
+        # 计算 F1-Score
+        macro_f1_score = f1_score(target_cls, pred_cls, average='macro')
+        weighted_f1_score = f1_score(target_cls, pred_cls, average='weighted')
+
+        accustr = f'\ttest_instance_accuracy\t{acc_over_instance}\ttest_class_accuracy\t{acc_over_class}\ttest_F1_Score\t{macro_f1_score}\tmAP\t{mAP}\twmAP\t{weighted_f1_score}'
+        logger.info(accustr)
+        print(accustr.replace('\t', ' '))
+
 
 
 if __name__ == '__main__':
