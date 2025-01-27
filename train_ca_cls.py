@@ -30,8 +30,10 @@ from colorama import Fore, Back, Style, init
 # 自建模块
 from data_utils.ParamDataLoader import MCBDataLoader
 from data_utils.ParamDataLoader import save_confusion_mat
-from models.CrossAttention_Cls import CrossAttention_Cls
 from models.TriFeaPred_OrigValid import TriFeaPred_OrigValid
+
+from models.CrossAttention_Cls import CrossAttention_Cls as model_cls
+
 
 
 def parse_args():
@@ -176,7 +178,7 @@ def main(args):
 
     '''MODEL LOADING'''
     # 获取分类模型
-    classifier = CrossAttention_Cls(num_class, args.n_metatype)
+    classifier = model_cls(num_class, args.n_metatype)
 
     model_savepth = 'model_trained/' + save_str + '.pth'
     try:
