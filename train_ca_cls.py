@@ -48,10 +48,12 @@ def parse_args():
     parser.add_argument('--n_metatype', type=int, default=4, help='number of considered meta type')  # 计算约束时考虑的基元数
     parser.add_argument('--num_point', type=int, default=2000, help='Point Number') # 点数量
 
-    parser.add_argument('--is_use_pred_addattr', type=str, default='False', choices=['True', 'False'], help='---') # 点数量
+    parser.add_argument('--is_use_pred_addattr', type=str, default='True', choices=['True', 'False'], help='---') # 点数量
     parser.add_argument('--save_str', type=str, default='ca_final', help='---')
     parser.add_argument('--is_train', default='False', choices=['True', 'False'], type=str, help='---')
     parser.add_argument('--rotate', default=0, type=int, help='---')
+    parser.add_argument('--cst_pcd', type=str, default='cst_pcd_abc25t.pth', help='---')
+    # parser.add_argument('--cst_pcd', type=str, default='TriFeaPred_ValidOrig_fuse.pth', help='---')
 
     parser.add_argument('--local', default='False', choices=['True', 'False'], type=str, help='---')
     parser.add_argument('--root_sever', type=str,
@@ -190,9 +192,9 @@ def main(args):
     if is_use_pred_addattr:
         try:
             predictor = TriFeaPred_OrigValid(n_points_all=args.num_point, n_metatype=args.n_metatype).cuda()
-            predictor.load_state_dict(torch.load('model_trained/TriFeaPred_ValidOrig_fuse.pth'))
+            predictor.load_state_dict(torch.load('model_trained/' + args.cst_pcd))
             predictor = predictor.eval()
-            print(Fore.GREEN + 'load param attr predictor from', 'model_trained/TriFeaPred_ValidOrig_fuse.pth')
+            print(Fore.GREEN + 'load param attr predictor from', 'model_trained/', args.cst_pcd)
         except:
             print(Fore.GREEN + 'load param attr predictor failed')
             exit(1)

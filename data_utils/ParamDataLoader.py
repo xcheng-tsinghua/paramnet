@@ -306,6 +306,9 @@ class STEPMillionDataLoader(Dataset):
             rotation_matrix = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
             point_set[:, [0, 2]] = point_set[:, [0, 2]].dot(rotation_matrix)  # random rotation # 仅仅是x，y分量作旋转-----------
 
+            if self.is_backaddattr:
+                eualangle[:, [0, 2]] = eualangle[:, [0, 2]].dot(rotation_matrix)  # random rotation # 仅仅是x，y分量作旋转-----------
+
         if self.is_backaddattr:
             return point_set, eualangle, is_nearby, meta_type
         else:

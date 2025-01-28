@@ -43,7 +43,7 @@ nohup python train_cls.py --bs=32 --local=False
 python train_cst_pred.py --abc_pack=1 && python train_cst_pred.py --abc_pack=2 && python train_cst_pred.py --abc_pack=3 && python train_cst_pred.py --abc_pack=4 && python train_cst_pred.py --abc_pack=5 && python train_cst_pred.py --abc_pack=6 && python train_cst_pred.py --abc_pack=7 && python train_cst_pred.py --abc_pack=8 && python train_cst_pred.py --abc_pack=9 && python train_cst_pred.py --abc_pack=10 && python train_cst_pred.py --abc_pack=11 && python train_cst_pred.py --abc_pack=12 && python train_cst_pred.py --abc_pack=13 && python train_cst_pred.py --abc_pack=14 && python train_cst_pred.py --abc_pack=15 && python train_cst_pred.py --abc_pack=16 && python train_cst_pred.py --abc_pack=17 && python train_cst_pred.py --abc_pack=18 && python train_cst_pred.py --abc_pack=19
 
 
-python train_cst_pred.py --is_train=False
+python train_cst_pred.py --rotate=25 && python train_cst_pred.py --rotate=50 && python train_cst_pred.py --rotate=100 && python train_cst_pred.py --rotate=200
 
 python train_cst_pred.py --abc_pack=20 --is_train=False
 
@@ -52,3 +52,6 @@ python train_ablation.py --prism=50 && python train_ablation.py --prism=60 && py
 python train_ca_cls.py --rotate=25 && python train_ca_cls.py --rotate=50 && python train_ca_cls.py --rotate=100 && python train_ca_cls.py --rotate=200
 
 python eval_rot_cls.py --rotate=25 && python eval_rot_cls.py --rotate=50 && python eval_rot_cls.py --rotate=100 && python eval_rot_cls.py --rotate=200
+
+
+
