@@ -244,25 +244,18 @@ class STEPMillionDataLoader(Dataset):
                  root=r'D:\document\DeepLearning\ParPartsNetWork\DataSetNew',  # 数据集文件夹路径
                  npoints=2500,  # 每个点云文件的点数
                  data_augmentation=True,  # 是否加噪音
-                 is_backaddattr=True
+                 is_backaddattr=True,
+                 rotate=0.0  # 沿+Z旋转角度
                  ):
 
         self.npoints = npoints
         self.data_augmentation = data_augmentation
         self.is_backaddattr = is_backaddattr
+        self.rotate = rotate
 
         print('STEPMillion dataset, from:' + root)
 
         self.datapath = get_allfiles(root)
-
-
-        # index_file = os.path.join(root, 'index_file.txt')
-        #
-        # self.datapath = []
-        # with open(index_file, 'r', encoding="utf-8") as f:
-        #     for line in f.readlines():
-        #         current_path = os.path.join(root, 'overall', line)
-        #         self.datapath.append(current_path)
 
         print('instance all:', len(self.datapath))
 
@@ -306,6 +299,12 @@ class STEPMillionDataLoader(Dataset):
             # rotation_matrix = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
             # point_set[:, [0, 2]] = point_set[:, [0, 2]].dot(rotation_matrix)  # random rotation # 仅仅是x，y分量作旋转-----------
             point_set += np.random.normal(0, 0.02, size=point_set.shape)  # random jitter # 所有分量加正态分布随机数
+
+        # 沿z轴指定角度旋转
+        if self.rotate:
+            theta = np.radians(self.rotate)
+            rotation_matrix = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
+            point_set[:, [0, 2]] = point_set[:, [0, 2]].dot(rotation_matrix)  # random rotation # 仅仅是x，y分量作旋转-----------
 
         if self.is_backaddattr:
             return point_set, eualangle, is_nearby, meta_type

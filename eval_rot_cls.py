@@ -50,7 +50,7 @@ def parse_args():
 
     parser.add_argument('--is_use_pred_addattr', type=str, default='True', choices=['True', 'False'], help='---') # 点数量
     parser.add_argument('--save_str', type=str, default='ca_final', help='---')
-    parser.add_argument('--rotate', default=0, type=int, help='---')
+    parser.add_argument('--rotate', default=0, type=float, help='---')
 
     parser.add_argument('--local', default='False', choices=['True', 'False'], type=str, help='---')
     parser.add_argument('--root_sever', type=str,

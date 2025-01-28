@@ -25,9 +25,9 @@ import numpy as np
 from data_utils.ParamDataLoader import ParamDataLoader
 from data_utils.ParamDataLoader import MCBDataLoader, STEPMillionDataLoader
 
-# from models.TriFeaPred_OrigValid import TriFeaPred_OrigValid as cst_pcd
+from models.TriFeaPred_OrigValid import TriFeaPred_OrigValid as cst_pcd
 # from models.hpnet import PrimitiveNet as cst_pcd
-from models.parsenet import PrimitivesEmbeddingDGCNGn as cst_pcd
+# from models.parsenet import PrimitivesEmbeddingDGCNGn as cst_pcd
 
 
 def parse_args():
@@ -44,17 +44,19 @@ def parse_args():
     parser.add_argument('--decay_rate', type=float, default=1e-4, help='decay rate')
     parser.add_argument('--n_metatype', type=int, default=4, help='number of considered meta type')  # 计算约束时考虑的基元数, [0-13)共13种
     parser.add_argument('--workers', type=int, default=10, help='dataloader workers')
-    parser.add_argument('--save_str', type=str, default='parsenet', help='dataloader workers')
+    parser.add_argument('--save_str', type=str, default='cst_pcd_abc25t', help='dataloader workers')
 
     parser.add_argument('--abc_pack', type=int, default=-1, help='dataloader workers')
 
-    parser.add_argument('--is_train', default='True', choices=['True', 'False'], type=str, help='---')
+    parser.add_argument('--rotate', default=0, type=float, help='---')
+
+    parser.add_argument('--is_train', default='False', choices=['True', 'False'], type=str, help='---')
     parser.add_argument('--local', default='False', choices=['True', 'False'], type=str, help='---')
     parser.add_argument('--root_sever', type=str,
-                        default=r'/root/my_data/data_set/STEPMillion/STEPMillion_pack{pack_idx}/overall',
+                        default=r'/root/my_data/data_set/STEP20000_Hammersley_2000',
                         help='root of dataset')
     parser.add_argument('--root_local', type=str,
-                        default=r'D:\document\DeepLearning\DataSet\STEPMillion\STEPMillion_{pack_idx}\STEPMillion_pack{pack_idx}\overall',
+                        default=r'D:\document\DeepLearning\DataSet\STEP20000_Hammersley_2000',
                         help='root of dataset')
 
     # Parametric20000
@@ -105,7 +107,10 @@ def main(args):
         data_root = str(data_root).replace('{pack_idx}', str(abc_pack))
 
     # train_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, data_augmentation=True, is_train=True, is_back_addattr=True)
-    train_dataset = STEPMillionDataLoader(root=data_root, npoints=args.num_point, data_augmentation=True)
+    # train_dataset = STEPMillionDataLoader(root=data_root, npoints=args.num_point, data_augmentation=True)
+    # train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.bs, shuffle=True, num_workers=int(args.workers))  # , drop_last=True
+
+    train_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, is_train=False, data_augmentation=False, is_back_addattr=True, rotate=args.rotate)
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.bs, shuffle=True, num_workers=int(args.workers))  # , drop_last=True
 
     '''MODEL LOADING'''
