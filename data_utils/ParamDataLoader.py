@@ -1105,10 +1105,20 @@ def all_metric_cls(all_preds: list, all_labels: list, confusion_dir: str='', is_
         print('-------', all_labels)
         print('-------', all_labels.shape)
         print('-------', n_classes)
+        raise ValueError('---------')
+
     ap_sig = []
     # 计算单个类别的 ap
     for i in range(n_classes):
-        ap = average_precision_score(all_labels_one_hot[:, i], all_preds[:, i])
+        try:
+            ap = average_precision_score(all_labels_one_hot[:, i], all_preds[:, i])
+        except:
+            print('-------', all_labels)
+            print('-------', all_labels_one_hot)
+            print('-------', all_labels.shape)
+            print('-------', n_classes)
+            raise ValueError('---------')
+
         ap_sig.append(ap)
 
     mAP = np.mean(ap_sig)
