@@ -146,7 +146,7 @@ def main(args):
             all_labels.append(target.detach().cpu().numpy())
 
         # 计算分类指标
-        all_metric_train = all_metric_cls(all_preds, all_labels, os.path.join(confusion_dir, f'train-{epoch}.png'))
+        all_metric_train = all_metric_cls(all_preds, all_labels, os.path.join(confusion_dir, f'train-{epoch}.png'), is_instance_only=True)
         logstr_trainaccu = f'\ttrain_instance_accu:\t{all_metric_train[0]}'
 
         # 调整学习率并保存权重
@@ -171,7 +171,7 @@ def main(args):
                 all_preds.append(pred.detach().cpu().numpy())
                 all_labels.append(target.detach().cpu().numpy())
 
-            all_metric_eval = all_metric_cls(all_preds, all_labels, os.path.join(confusion_dir, f'eval-{epoch}.png'))
+            all_metric_eval = all_metric_cls(all_preds, all_labels, os.path.join(confusion_dir, f'eval-{epoch}.png'), is_instance_only=True)
             accustr = f'\teval_ins_acc\t{all_metric_eval[0]}\teval_cls_acc\t{all_metric_eval[1]}\teval_f1_m\t{all_metric_eval[2]}\teval_f1_w\t{all_metric_eval[3]}\tmAP\t{all_metric_eval[4]}'
             logger.info(logstr_epoch + logstr_trainaccu + accustr)
 

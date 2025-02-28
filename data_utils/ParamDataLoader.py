@@ -1058,12 +1058,13 @@ def rotate_points(points, angle_deg):
     return rotated_points
 
 
-def all_metric_cls(all_preds: list, all_labels: list, confusion_dir: str=''):
+def all_metric_cls(all_preds: list, all_labels: list, confusion_dir: str='', is_instance_only=False):
     """
     计算分类评价指标：Acc.instance, Acc.class, F1-score, mAP
     :param all_preds: [item0, item1, ...], item: [bs, n_classes]
     :param all_labels: [item0, item1, ...], item: [bs, ]， 其中必须保存整形数据
     :param confusion_dir: 保存 confusion matrix 的路径，为空则不保存
+    :param is_instance_only: 是否仅返回instance.acc
     :return: Acc.instance, Acc.class, F1-score-macro, F1-score-weighted, mAP
     """
     # 将所有batch的预测和真实标签整合在一起
@@ -1079,6 +1080,9 @@ def all_metric_cls(all_preds: list, all_labels: list, confusion_dir: str=''):
     pred_choice = np.argmax(all_preds, axis=1)  # -> [n_samples, ]
     correct = np.equal(pred_choice, all_labels).sum()
     acc_ins = correct / n_samples
+
+    if is_instance_only:
+        return acc_ins, 0, 0, 0, 0
 
     # ---------- 计算 Acc.class ----------
     acc_cls = []
