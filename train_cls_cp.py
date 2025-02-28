@@ -86,11 +86,11 @@ def main(args):
 
     '''加载模型及权重'''
     if args.model == 'GCN3D':
-        classifier = GCN3D(support_num=1, neighbor_num=20, classes_num=num_class)
+        classifier = GCN3D(support_num=1, neighbor_num=20, classes_num=num_class).cuda()
     elif args.model == 'DGCNN':
-        classifier = DGCNN(output_channels=num_class)
+        classifier = DGCNN(output_channels=num_class).cuda()
     elif args.model == 'PointNet':
-        classifier = PointNet(k=num_class)
+        classifier = PointNet(k=num_class).cuda()
     else:
         raise TypeError('error model name!')
 
