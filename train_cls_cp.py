@@ -164,7 +164,7 @@ def main(args):
                 points, target = data[0].float().cuda(), data[1].long().cuda()
 
                 points = points.permute(0, 2, 1)
-                assert points.size()[1] == 2
+                assert points.size()[1] == 3
 
                 pred = classifier(points)
 
