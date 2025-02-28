@@ -1,6 +1,9 @@
 
 import torch
 import os
+import numpy as np
+from sklearn.preprocessing import label_binarize, LabelBinarizer
+
 
 def test():
     # aTensor = torch.tensor([0, 1, 2, 3, 4, 5, 6, 7, 1, 4])
@@ -24,6 +27,19 @@ def test():
 
 
 if __name__ == '__main__':
-    test()
+    # test()
+    cla = 2
+    alabel = torch.randint(0, cla, (10,)).numpy()
 
+    print(alabel)
+    bainsas = label_binarize(alabel, classes=np.arange(cla))
+
+    if cla == 2:
+        bainsas_rev = 1 - bainsas
+        bainsas = np.concatenate([bainsas_rev, bainsas], axis=1)
+
+    print(bainsas)
+
+
+    pass
 

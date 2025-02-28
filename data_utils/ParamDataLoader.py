@@ -1099,27 +1099,16 @@ def all_metric_cls(all_preds: list, all_labels: list, confusion_dir: str='', is_
     f1_w = f1_score(all_labels, pred_choice, average='weighted')
 
     # ---------- 计算 mAP ----------
-    try:
-        all_labels_one_hot = label_binarize(all_labels, classes=np.arange(n_classes))
-    except:
-        print('-------', all_labels)
-        print('-------', all_labels.shape)
-        print('-------', n_classes)
-        raise ValueError('---------')
+    all_labels_one_hot = label_binarize(all_labels, classes=np.arange(n_classes))
+
+    if n_classes == 2:
+        all_labels_one_hot_rev = 1 - all_labels_one_hot
+        all_labels_one_hot = np.concatenate([all_labels_one_hot_rev, all_labels_one_hot], axis=1)
 
     ap_sig = []
     # 计算单个类别的 ap
     for i in range(n_classes):
-        try:
-            ap = average_precision_score(all_labels_one_hot[:, i], all_preds[:, i])
-        except:
-            print('-------', all_labels)
-            print('-------', all_labels_one_hot)
-            print('-------', all_labels.shape)
-            print('-------', all_labels_one_hot.shape)
-            print('-------', n_classes)
-            raise ValueError('---------')
-
+        ap = average_precision_score(all_labels_one_hot[:, i], all_preds[:, i])
         ap_sig.append(ap)
 
     mAP = np.mean(ap_sig)
