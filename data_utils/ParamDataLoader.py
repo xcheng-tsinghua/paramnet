@@ -1058,7 +1058,7 @@ def rotate_points(points, angle_deg):
     return rotated_points
 
 
-def all_metric_cls(all_preds: list, all_labels: list, confusion_dir: str='', is_instance_only=False):
+def all_metric_cls(all_preds: list, all_labels: list, confusion_dir: str=''):
     """
     计算分类评价指标：Acc.instance, Acc.class, F1-score, mAP
     :param all_preds: [item0, item1, ...], item: [bs, n_classes]
@@ -1080,9 +1080,6 @@ def all_metric_cls(all_preds: list, all_labels: list, confusion_dir: str='', is_
     pred_choice = np.argmax(all_preds, axis=1)  # -> [n_samples, ]
     correct = np.equal(pred_choice, all_labels).sum()
     acc_ins = correct / n_samples
-
-    if is_instance_only:
-        return acc_ins, 0, 0, 0, 0
 
     # ---------- 计算 Acc.class ----------
     acc_cls = []
