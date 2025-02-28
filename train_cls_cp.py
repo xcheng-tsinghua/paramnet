@@ -17,7 +17,8 @@ from data_utils.ParamDataLoader import all_metric_cls, PrismCuboidDataLoader
 from models.GCN3D import GCN3D
 from models.dgcnn import DGCNN
 from models.PointNet import PointNet
-
+from models.PointConv import PointConv
+from models.PointCNN import PointCNN
 
 def parse_args():
     '''PARAMETERS'''
@@ -32,7 +33,7 @@ def parse_args():
 
     parser.add_argument('--save_str', type=str, default='sdgraph', help='---')
     parser.add_argument('--prism_angle', default=50, choices=[50, 60, 70, 80, 82, 85, 87, 89], type=int, help='---')
-    parser.add_argument('--model', type=str, default='GCN3D', choices=['GCN3D', 'DGCNN', 'PointNet'], help='model used for cls')
+    parser.add_argument('--model', type=str, default='GCN3D', choices=['GCN3D', 'DGCNN', 'PointNet', 'PointConv', 'PointCNN'], help='model used for cls')
 
     parser.add_argument('--local', default='False', choices=['True', 'False'], type=str, help='runing on local?')
     parser.add_argument('--root_sever', type=str, default=r'/root/my_data/data_set/prism_cuboid_p2500_n10000', help='---')
@@ -91,6 +92,10 @@ def main(args):
         classifier = DGCNN(output_channels=num_class).cuda()
     elif args.model == 'PointNet':
         classifier = PointNet(k=num_class).cuda()
+    elif args.model == 'PointConv':
+        classifier = PointConv(num_classes=num_class).cuda()
+    elif args.model == 'PointCNN':
+        classifier = PointCNN(n_classes=num_class).cuda()
     else:
         raise TypeError('error model name!')
 
