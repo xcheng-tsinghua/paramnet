@@ -17,6 +17,8 @@ from PIL import Image
 import json
 from tqdm import tqdm
 from colorama import Fore, Back, Style, init
+from sklearn.metrics import f1_score, average_precision_score
+from sklearn.preprocessing import label_binarize
 
 
 class ParamDataLoader(Dataset):
@@ -1054,6 +1056,59 @@ def rotate_points(points, angle_deg):
     # 将旋转矩阵应用于每个点
     rotated_points = points.dot(rotation_matrix.T)
     return rotated_points
+
+
+def all_metric_cls(all_preds: list, all_labels: list, confusion_dir: str=''):
+    """
+    计算分类评价指标：Acc.instance, Acc.class, F1-score, mAP
+    :param all_preds: [item0, item1, ...], item: [bs, n_classes]
+    :param all_labels: [item0, item1, ...], item: [bs, ]， 其中必须保存整形数据
+    :param confusion_dir: 保存 confusion matrix 的路径，为空则不保存
+    :return: Acc.instance, Acc.class, F1-score-macro, F1-score-weighted, mAP
+    """
+    # 将所有batch的预测和真实标签整合在一起
+    all_preds = np.vstack(all_preds)  # 形状为 [n_samples, n_classes]
+    all_labels = np.hstack(all_labels)  # 形状为 [n_samples]
+    n_samples, n_classes = all_preds.shape
+
+    # 确保all_labels中保存的为整形数据
+    if not np.issubdtype(all_labels.dtype, np.integer):
+        raise TypeError('all_labels 中保存了非整形数据')
+
+    # ---------- 计算 Acc.Instance ----------
+    pred_choice = np.argmax(all_preds, axis=1)  # -> [n_samples, ]
+    correct = np.equal(pred_choice, all_labels).sum()
+    acc_ins = correct / n_samples
+
+    # ---------- 计算 Acc.class ----------
+    acc_cls = []
+    for class_idx in range(n_classes):
+        class_mask = (all_labels == class_idx)
+        if np.sum(class_mask) == 0:
+            continue
+        cls_acc_sig = np.mean(pred_choice[class_mask] == all_labels[class_mask])
+        acc_cls.append(cls_acc_sig)
+    acc_cls = np.mean(acc_cls)
+
+    # ---------- 计算 F1-score ----------
+    f1_m = f1_score(all_labels, pred_choice, average='macro')
+    f1_w = f1_score(all_labels, pred_choice, average='weighted')
+
+    # ---------- 计算 mAP ----------
+    all_labels_one_hot = label_binarize(all_labels, classes=np.arange(n_classes))
+    ap_sig = []
+    # 计算单个类别的 ap
+    for i in range(n_classes):
+        ap = average_precision_score(all_labels_one_hot[:, i], all_preds[:, i])
+        ap_sig.append(ap)
+
+    mAP = np.mean(ap_sig)
+
+    # ---------- 保存 confusion matrix ----------
+    if confusion_dir != '':
+        save_confusion_mat(pred_choice.tolist(), all_labels.tolist(), confusion_dir)
+
+    return acc_ins, acc_cls, f1_m, f1_w, mAP
 
 
 if __name__ == '__main__':
