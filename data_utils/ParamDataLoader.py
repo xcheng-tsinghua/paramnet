@@ -1116,6 +1116,7 @@ def all_metric_cls(all_preds: list, all_labels: list, confusion_dir: str='', is_
             print('-------', all_labels)
             print('-------', all_labels_one_hot)
             print('-------', all_labels.shape)
+            print('-------', all_labels_one_hot.shape)
             print('-------', n_classes)
             raise ValueError('---------')
 
