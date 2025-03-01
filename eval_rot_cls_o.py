@@ -32,6 +32,7 @@ def parse_args():
     parser.add_argument('--learning_rate', default=1e-4, type=float, help='learning rate in training')
     parser.add_argument('--decay_rate', type=float, default=1e-4, help='decay rate')
     parser.add_argument('--is_load_weight', type=str, default='False', choices=['True', 'False'], help='---')
+    parser.add_argument('--num_point', type=int, default=2000, help='Point Number') # 点数量
 
     parser.add_argument('--save_str', type=str, default='sdgraph', help='---')
     parser.add_argument('--rotate', default=0, type=float, help='Degree of rotate angle, not radius')
