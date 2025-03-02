@@ -227,7 +227,7 @@ def get_postpool(in_dim, out_dim):
 
 class PPFNet(nn.Module):
 	"""Feature extraction Module that extracts hybrid features"""
-	def __init__(self, n_classes, features=['ppf', 'dxyz', 'xyz'], emb_dims=1024, radius=0.3, num_neighbors=64):
+	def __init__(self, n_classes, features=['ppf', 'dxyz', 'xyz'], emb_dims=512, radius=0.3, num_neighbors=64):
 		super().__init__()
 
 		self._logger = logging.getLogger(self.__class__.__name__)
@@ -243,11 +243,9 @@ class PPFNet(nn.Module):
 		self.prepool = get_prepool(raw_dim, emb_dims * 2)
 		self.postpool = get_postpool(emb_dims * 2, emb_dims)
 
-		self.fc1 = nn.Linear(1024, 512)
 		self.fc2 = nn.Linear(512, 256)
 		self.fc3 = nn.Linear(256, n_classes)
 		self.dropout = nn.Dropout(p=0.3)
-		self.bn1 = nn.BatchNorm1d(512)
 		self.bn2 = nn.BatchNorm1d(256)
 		self.relu = nn.ReLU()
 
@@ -287,8 +285,7 @@ class PPFNet(nn.Module):
 
 		cluster_feat = cluster_feat.max(1)[0]
 
-		x = F.relu(self.bn1(self.fc1(cluster_feat)))
-		x = F.relu(self.bn2(self.dropout(self.fc2(x))))
+		x = F.relu(self.bn2(self.dropout(self.fc2(cluster_feat))))
 		x = self.fc3(x)
 
 		x = F.log_softmax(x, dim=1)
