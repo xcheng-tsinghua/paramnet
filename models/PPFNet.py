@@ -227,7 +227,7 @@ def get_postpool(in_dim, out_dim):
 
 class PPFNet(nn.Module):
 	"""Feature extraction Module that extracts hybrid features"""
-	def __init__(self, n_classes, features=['ppf', 'dxyz', 'xyz'], emb_dims=512, radius=0.3, num_neighbors=64):
+	def __init__(self, n_classes, features=['ppf', 'dxyz', 'xyz'], emb_dims=256, radius=0.3, num_neighbors=64):
 		super().__init__()
 
 		self._logger = logging.getLogger(self.__class__.__name__)
@@ -243,10 +243,10 @@ class PPFNet(nn.Module):
 		self.prepool = get_prepool(raw_dim, emb_dims * 2)
 		self.postpool = get_postpool(emb_dims * 2, emb_dims)
 
-		self.fc2 = nn.Linear(512, 256)
-		self.fc3 = nn.Linear(256, n_classes)
+		self.fc2 = nn.Linear(256, 128)
+		self.fc3 = nn.Linear(128, n_classes)
 		self.dropout = nn.Dropout(p=0.3)
-		self.bn2 = nn.BatchNorm1d(256)
+		self.bn2 = nn.BatchNorm1d(128)
 		self.relu = nn.ReLU()
 
 	def forward(self, xyz):
