@@ -53,7 +53,7 @@ def parse_args():
     parser = argparse.ArgumentParser('training')
     parser.add_argument('--gpu', type=str, default='0', help='specify gpu device') # 指定的GPU设备
     parser.add_argument('--batch_size', type=int, default=16, help='batch size in training') # batch_size
-    parser.add_argument('--epoch', default=200, type=int, help='number of epoch in training') # 训练的epoch数
+    parser.add_argument('--epoch', default=40, type=int, help='number of epoch in training') # 训练的epoch数
     parser.add_argument('--learning_rate', default=1e-4, type=float, help='learning rate in training') # 学习率
     parser.add_argument('--decay_rate', type=float, default=1e-4, help='decay rate')
     parser.add_argument('--n_metatype', type=int, default=4, help='number of considered meta type')  # 计算约束时考虑的基元数
