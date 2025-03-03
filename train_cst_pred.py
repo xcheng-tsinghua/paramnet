@@ -49,7 +49,7 @@ def parse_args():
 
     parser.add_argument('--rotate', default=0, type=float, help='---')
 
-    parser.add_argument('--is_train', default='False', choices=['True', 'False'], type=str, help='---')
+    parser.add_argument('--is_train', default='True', choices=['True', 'False'], type=str, help='---')
     parser.add_argument('--local', default='False', choices=['True', 'False'], type=str, help='---')
     parser.add_argument('--root_sever', type=str,
                         default=r'/root/my_data/data_set/STEP20000_Hammersley_2000',
@@ -197,6 +197,7 @@ def main(args):
 
             scheduler.step()
             torch.save(predictor.state_dict(), model_savepth)
+
     else:
         print(Fore.BLACK + Back.GREEN + 'eval mode')
 

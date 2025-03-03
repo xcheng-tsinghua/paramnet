@@ -406,7 +406,7 @@ class MCBDataLoader(Dataset):
 
         if self.is_load_all:
             point_set = np.loadtxt(fn)
-            cls = None
+            cls = 0
         else:
             cls = self.classes[fn[0]]  # 表示类别的整形数字。 self.classes：键：‘plane'或者'car'，值：用于表示其类型的整形数字 0,1
             point_set = np.loadtxt(fn[1])  # n*6 (x, y, z, i, j, k)
