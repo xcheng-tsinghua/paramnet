@@ -255,11 +255,11 @@ class PointNetSetAbstraction(nn.Module):
 
 class PointNet2(nn.Module):
     # num_class = 40，normal_channel = false
-    def __init__(self, num_class: int):
+    def __init__(self, num_class: int, fea_channel=0):
         super().__init__()
 
         # 三个 set abstraction 层，in_channel = 3,
-        self.sa1 = PointNetSetAbstraction(npoint=512, radius=0.2, nsample=32, in_channel=3, mlp=[64, 64, 128],
+        self.sa1 = PointNetSetAbstraction(npoint=512, radius=0.2, nsample=32, in_channel=fea_channel + 3, mlp=[64, 64, 128],
                                           group_all=False)
         self.sa2 = PointNetSetAbstraction(npoint=128, radius=0.4, nsample=64, in_channel=128 + 3, mlp=[128, 128, 256],
                                           group_all=False)
@@ -274,13 +274,13 @@ class PointNet2(nn.Module):
         self.drop2 = nn.Dropout(0.4)
         self.fc3 = nn.Linear(256, num_class)
 
-    def forward(self, xyz):
+    def forward(self, xyz, fea=None):
         """
         xyz: [bs, 3, n_points]
         """
         B, _, _ = xyz.shape
 
-        l1_xyz, l1_points = self.sa1(xyz, None)
+        l1_xyz, l1_points = self.sa1(xyz, fea)
         l2_xyz, l2_points = self.sa2(l1_xyz, l1_points)
         l3_xyz, l3_points = self.sa3(l2_xyz, l2_points)
         x = l3_points.view(B, 1024)
@@ -294,10 +294,10 @@ class PointNet2(nn.Module):
 
 if __name__ == '__main__':
     x = torch.rand((2, 3, 1024)).cuda()
+    featensor = torch.rand((2, 7, 1024)).cuda()
 
     anet = PointNet2(20).cuda()
     y = anet(x)
-    print("Network Architecture: ")
     print("Input Shape of PointNet: ", x.shape, "\nOutput Shape of PointNet: ", y.shape)
 
 

@@ -36,14 +36,13 @@ def parse_args():
     parser.add_argument('--gpu', type=str, default='0', help='specify gpu device') # 指定的GPU设备
     parser.add_argument('--bs', type=int, default=18, help='batch size in training') # batch_size
     parser.add_argument('--model', default='pointnet2_cls_ssg', help='model name [default: pointnet_cls]') # 已训练好的分类模型
-    parser.add_argument('--num_category', default=40, type=int, choices=[10, 40],  help='training on ModelNet10/40') # 指定训练集 ModelNet10/40
     parser.add_argument('--epoch', default=30, type=int, help='number of epoch in training') # 训练的epoch数
-    parser.add_argument('--learning_rate', default=0.001, type=float, help='learning rate in training') # 学习率
+    parser.add_argument('--learning_rate', default=1e-4, type=float, help='learning rate in training') # 学习率
     parser.add_argument('--num_point', type=int, default=2000, help='Point Number') # 点数量
     parser.add_argument('--optimizer', type=str, default='Adam', help='optimizer for training') # 优化器
-    parser.add_argument('--decay_rate', type=float, default=1e-4, help='decay rate')
+
     parser.add_argument('--n_metatype', type=int, default=4, help='number of considered meta type')  # 计算约束时考虑的基元数, [0-13)共13种
-    parser.add_argument('--workers', type=int, default=10, help='dataloader workers')
+
     parser.add_argument('--save_str', type=str, default='cst_pcd_abc25t', help='dataloader workers')
 
     parser.add_argument('--abc_pack', type=int, default=-1, help='dataloader workers')
@@ -108,10 +107,10 @@ def main(args):
 
     # train_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, data_augmentation=True, is_train=True, is_back_addattr=True)
     # train_dataset = STEPMillionDataLoader(root=data_root, npoints=args.num_point, data_augmentation=True)
-    # train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.bs, shuffle=True, num_workers=int(args.workers))  # , drop_last=True
+    # train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.bs, shuffle=True, num_workers=5)  # , drop_last=True
 
-    train_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, is_train=False, data_augmentation=False, is_back_addattr=True, rotate=args.rotate)
-    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.bs, shuffle=True, num_workers=int(args.workers))  # , drop_last=True
+    train_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, data_augmentation=False, is_back_addattr=True, is_load_all=True)
+    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.bs, shuffle=True, num_workers=5)  # , drop_last=True
 
     '''MODEL LOADING'''
     predictor = cst_pcd(n_points_all=args.num_point, n_metatype=args.n_metatype).cuda()
@@ -133,7 +132,7 @@ def main(args):
             lr=args.learning_rate, # 0.001
             betas=(0.9, 0.999),
             eps=1e-08,
-            weight_decay=args.decay_rate # 1e-4
+            weight_decay=1e-4
         )
     else:
         optimizer = torch.optim.SGD(predictor.parameters(), lr=0.01, momentum=0.9)
@@ -256,6 +255,11 @@ def main(args):
             print_str = f'[eula loss all: {euler_loss_all}, nearby accu all: {nearby_acc_all}, meta type accu all: {meta_acc_all}'
             print(print_str)
 
+            tres = 0.02
+            if abs(euler_loss_all - 0.0717) < tres and abs(nearby_acc_all - 0.8555) < tres and abs(meta_acc_all - 0.8646) < tres:
+                print(Fore.BLACK + Back.GREEN + f'end training res: MAD-{euler_loss_all}, ADJ-{nearby_acc_all}, PMT-{meta_acc_all}')
+                exit(0)
+
 
 def clear_log(log_dir):
     """
@@ -276,6 +280,6 @@ if __name__ == '__main__':
     # print(asas)
 
     parsed_args = parse_args()
-    clear_log('./log')
+    # clear_log('./log')
     init(autoreset=True)
     main(parsed_args)

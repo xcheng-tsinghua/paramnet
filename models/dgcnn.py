@@ -40,39 +40,8 @@ def get_graph_feature(x, k=20, idx=None):
     return feature
 
 
-class PointNet(nn.Module):
-    def __init__(self, args, emb_dims=1024, output_channels=40):
-        super(PointNet, self).__init__()
-        self.conv1 = nn.Conv1d(3, 64, kernel_size=1, bias=False)
-        self.conv2 = nn.Conv1d(64, 64, kernel_size=1, bias=False)
-        self.conv3 = nn.Conv1d(64, 64, kernel_size=1, bias=False)
-        self.conv4 = nn.Conv1d(64, 128, kernel_size=1, bias=False)
-        self.conv5 = nn.Conv1d(128, emb_dims, kernel_size=1, bias=False)
-        self.bn1 = nn.BatchNorm1d(64)
-        self.bn2 = nn.BatchNorm1d(64)
-        self.bn3 = nn.BatchNorm1d(64)
-        self.bn4 = nn.BatchNorm1d(128)
-        self.bn5 = nn.BatchNorm1d(emb_dims)
-        self.linear1 = nn.Linear(emb_dims, 512, bias=False)
-        self.bn6 = nn.BatchNorm1d(512)
-        self.dp1 = nn.Dropout()
-        self.linear2 = nn.Linear(512, output_channels)
-
-    def forward(self, x):
-        x = F.relu(self.bn1(self.conv1(x)))
-        x = F.relu(self.bn2(self.conv2(x)))
-        x = F.relu(self.bn3(self.conv3(x)))
-        x = F.relu(self.bn4(self.conv4(x)))
-        x = F.relu(self.bn5(self.conv5(x)))
-        x = F.adaptive_max_pool1d(x, 1).squeeze()
-        x = F.relu(self.bn6(self.linear1(x)))
-        x = self.dp1(x)
-        x = self.linear2(x)
-        return x
-
-
 class DGCNN(nn.Module):
-    def __init__(self, k=20, emb_dims=1024, dropout=0.5, output_channels=40):
+    def __init__(self, output_channels=40, fea_channel=0, k=20, emb_dims=1024, dropout=0.5):
         super(DGCNN, self).__init__()
         self.k = k
 
@@ -85,7 +54,7 @@ class DGCNN(nn.Module):
         self.conv1 = nn.Sequential(nn.Conv2d(6, 64, kernel_size=1, bias=False),
                                    self.bn1,
                                    nn.LeakyReLU(negative_slope=0.2))
-        self.conv2 = nn.Sequential(nn.Conv2d(64 * 2, 64, kernel_size=1, bias=False),
+        self.conv2 = nn.Sequential(nn.Conv2d((64 + fea_channel) * 2, 64, kernel_size=1, bias=False),
                                    self.bn2,
                                    nn.LeakyReLU(negative_slope=0.2))
         self.conv3 = nn.Sequential(nn.Conv2d(64 * 2, 128, kernel_size=1, bias=False),
@@ -94,7 +63,7 @@ class DGCNN(nn.Module):
         self.conv4 = nn.Sequential(nn.Conv2d(128 * 2, 256, kernel_size=1, bias=False),
                                    self.bn4,
                                    nn.LeakyReLU(negative_slope=0.2))
-        self.conv5 = nn.Sequential(nn.Conv1d(512, emb_dims, kernel_size=1, bias=False),
+        self.conv5 = nn.Sequential(nn.Conv1d(512 + fea_channel, emb_dims, kernel_size=1, bias=False),
                                    self.bn5,
                                    nn.LeakyReLU(negative_slope=0.2))
         self.linear1 = nn.Linear(emb_dims * 2, 512, bias=False)
@@ -105,14 +74,18 @@ class DGCNN(nn.Module):
         self.dp2 = nn.Dropout(p=dropout)
         self.linear3 = nn.Linear(256, output_channels)
 
-    def forward(self, x):
+    def forward(self, x, fea=None):
         """
         x: [bs, 3, n_points]
+        fea: [bs, fea_channel, n_points]
         """
         batch_size = x.size(0)
         x = get_graph_feature(x, k=self.k)
         x = self.conv1(x)
         x1 = x.max(dim=-1, keepdim=False)[0]
+
+        if fea is not None:
+            x1 = torch.cat([x1, fea], dim=1)
 
         x = get_graph_feature(x1, k=self.k)
         x = self.conv2(x)
@@ -144,20 +117,21 @@ class DGCNN(nn.Module):
 
 
 def test():
-    sys.path.append("..")
-    from util import parameter_number
+    # sys.path.append("..")
+    # from util import parameter_number
     import time
 
     device = torch.device('cuda:0')
-    points = torch.randn(8, 1024, 3).to(device)
-    model = DGCNN().to(device)
+    points = torch.randn(8, 3, 1024).to(device)
+    fea = torch.rand(8, 7, 1024).cuda()
+    model = DGCNN(36).to(device)
 
     start = time.time()
     out = model(points)
 
-    print("Inference time: {}".format(time.time() - start))
-    print("Parameter #: {}".format(parameter_number(model)))
-    print("Input size: {}".format(points.size()))
+    # print("Inference time: {}".format(time.time() - start))
+    # print("Parameter #: {}".format(parameter_number(model)))
+    # print("Input size: {}".format(points.size()))
     print("Out   size: {}".format(out.size()))
 
 

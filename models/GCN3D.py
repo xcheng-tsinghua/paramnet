@@ -259,17 +259,17 @@ class PoolTo_layer(nn.Module):
 
 
 class GCN3D(nn.Module):
-    def __init__(self, support_num: int, neighbor_num: int, classes_num: int =40):
+    def __init__(self, classes_num: int = 40, fea_channel=0, support_num: int = 1, neighbor_num: int = 20):
         super().__init__()
         self.neighbor_num = neighbor_num
 
-        self.conv_0 = Conv_surface(kernel_num= 32, support_num= support_num)
-        self.conv_1 = Conv_layer(32, 64, support_num= support_num)
-        self.pool_1 = Pool_layer(pooling_rate= 4, neighbor_num= 4)
-        self.conv_2 = Conv_layer(64, 128, support_num= support_num)
-        self.conv_3 = Conv_layer(128, 256, support_num= support_num)
-        self.pool_2 = Pool_layer(pooling_rate= 4, neighbor_num= 4)
-        self.conv_4 = Conv_layer(256, 1024, support_num= support_num)
+        self.conv_0 = Conv_surface(kernel_num=32, support_num=support_num)
+        self.conv_1 = Conv_layer(32+fea_channel, 64, support_num=support_num)
+        self.pool_1 = Pool_layer(pooling_rate=4, neighbor_num=4)
+        self.conv_2 = Conv_layer(64, 128, support_num=support_num)
+        self.conv_3 = Conv_layer(128, 256, support_num=support_num)
+        self.pool_2 = Pool_layer(pooling_rate=4, neighbor_num=4)
+        self.conv_4 = Conv_layer(256, 1024, support_num=support_num)
 
         self.classifier = nn.Sequential(
             nn.Linear(1024, 256),
@@ -279,8 +279,10 @@ class GCN3D(nn.Module):
             nn.Linear(256, classes_num)
         )
 
-    def forward(self,  vertices: "(bs, 3, vertice_num)"):
+    def forward(self,  vertices: "(bs, 3, vertice_num)", fea: "(bs, fea_channel, vertice_num)"=None):
         vertices = vertices.permute(0, 2, 1)
+        fea = fea.permute(0, 2, 1)
+
         bs, vertice_num, _ = vertices.size()
 
         # 计算最近的 self.neighbor_num 个点的索引
@@ -288,9 +290,13 @@ class GCN3D(nn.Module):
         # neighbor_index->(bs, vertice_num, neighbor_num)
 
         fm_0 = self.conv_0(neighbor_index, vertices)
-        fm_0 = F.relu(fm_0, inplace= True)
+        fm_0 = F.relu(fm_0, inplace=True)
+
+        if fea is not None:
+            fm_0 = torch.cat([fm_0, fea], dim=2)
+
         fm_1 = self.conv_1(neighbor_index, vertices, fm_0)
-        fm_1 = F.relu(fm_1, inplace= True)
+        fm_1 = F.relu(fm_1, inplace=True)
         vertices, fm_1 = self.pool_1(vertices, fm_1)
         neighbor_index = get_neighbor_index(vertices, self.neighbor_num)
 
@@ -307,4 +313,16 @@ class GCN3D(nn.Module):
 
         pred = F.log_softmax(pred, dim=1)
         return pred
+
+
+if __name__ == '__main__':
+    atensor = torch.rand(5, 3, 1000).cuda()
+    fea = torch.rand(5, 7, 1000).cuda()
+    anet = GCN3D(43, fea_channel=7).cuda()
+    aout = anet(atensor, fea)
+
+    print(aout.size())
+
+
+
 

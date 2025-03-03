@@ -328,7 +328,8 @@ class MCBDataLoader(Dataset):
                  npoints=2500,  # 每个点云文件的点数
                  data_augmentation=True,  # 是否加噪音
                  is_back_addattr=False,
-                 rotate=0
+                 rotate=0,
+                 is_load_all=False  # 是否直接返回root下的全部文件，忽略路径。用于约束预测用
                  ):
         """
         定位文件的路径如下：
@@ -366,37 +367,49 @@ class MCBDataLoader(Dataset):
         self.data_augmentation = data_augmentation
         self.is_back_addattr = is_back_addattr
         self.rotate = rotate
+        self.is_load_all = is_load_all
 
         print('MCB dataset, from:' + root)
 
-        if is_train:
-            inner_root = os.path.join(root, 'train')
+        if self.is_load_all:
+            self.classes = dict()
+            self.datapath = get_allfiles(root)
+
         else:
-            inner_root = os.path.join(root, 'test')
+            if is_train:
+                inner_root = os.path.join(root, 'train')
+            else:
+                inner_root = os.path.join(root, 'test')
 
-        # 获取全部类别列表，即 inner_root 内的全部文件夹名
-        category_all = get_subdirs(inner_root)
-        category_path = {}  # {'plane': [Path1,Path2,...], 'car': [Path1,Path2,...]}
+            # 获取全部类别列表，即 inner_root 内的全部文件夹名
+            category_all = get_subdirs(inner_root)
+            category_path = {}  # {'plane': [Path1,Path2,...], 'car': [Path1,Path2,...]}
 
-        for c_class in category_all:
-            class_root = os.path.join(inner_root, c_class)
-            file_path_all = get_allfiles(class_root)
+            for c_class in category_all:
+                class_root = os.path.join(inner_root, c_class)
+                file_path_all = get_allfiles(class_root)
 
-            category_path[c_class] = file_path_all
+                category_path[c_class] = file_path_all
 
-        self.datapath = []  # [(‘plane’, Path1), (‘car’, Path1), ...]存储点云的绝对路径，此外还有类型，放入同一个数组。类型，点云构成数组中的一个元素
-        for item in category_path:  # item 为字典的键，即类型‘plane','car'
-            for fn in category_path[item]:  # fn 为每类点云对应的文件路径
-                self.datapath.append((item, fn)) # item：类型（‘plane','car'）
+            self.datapath = []  # [(‘plane’, Path1), (‘car’, Path1), ...]存储点云的绝对路径，此外还有类型，放入同一个数组。类型，点云构成数组中的一个元素
+            for item in category_path:  # item 为字典的键，即类型‘plane','car'
+                for fn in category_path[item]:  # fn 为每类点云对应的文件路径
+                    self.datapath.append((item, fn)) # item：类型（‘plane','car'）
 
-        self.classes = dict(zip(sorted(category_path), range(len(category_path))))  # 用整形0,1,2,3等代表具体类型‘plane','car'等，此时字典category_path中的键值没有用到，self.classes的键为‘plane'或'car'，值为0,1
+            self.classes = dict(zip(sorted(category_path), range(len(category_path))))  # 用整形0,1,2,3等代表具体类型‘plane','car'等，此时字典category_path中的键值没有用到，self.classes的键为‘plane'或'car'，值为0,1
+
         print(self.classes)
         print('instance all:', len(self.datapath))
 
     def __getitem__(self, index):  # 作用为输出点云中点的三维坐标及对应类别，类型均为tensor，类别为1×1的矩阵
         fn = self.datapath[index]  # (‘plane’, Path1). fn:一维元组，fn[0]：‘plane'或者'car'，fn[1]：对应的点云文件路径
-        cls = self.classes[fn[0]]  # 表示类别的整形数字。 self.classes：键：‘plane'或者'car'，值：用于表示其类型的整形数字 0,1
-        point_set = np.loadtxt(fn[1])  # n*6 (x, y, z, i, j, k)
+
+        if self.is_load_all:
+            point_set = np.loadtxt(fn)
+            cls = None
+        else:
+            cls = self.classes[fn[0]]  # 表示类别的整形数字。 self.classes：键：‘plane'或者'car'，值：用于表示其类型的整形数字 0,1
+            point_set = np.loadtxt(fn[1])  # n*6 (x, y, z, i, j, k)
 
         # 从 np.arange(len(seg))中随机选数，数量为self.npoints，replace：是否可取相同数字，replace=true表示可取相同数字，可规定每个元素的抽取概率，默认均等概率
         try:
