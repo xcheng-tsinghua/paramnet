@@ -192,7 +192,11 @@ def main(args):
                 log_str = f'train_loss\t{loss_all.item()}\teula_loss\t{loss_eula.item()}\tnearby_loss\t{loss_nearby.item()}\tmetatype_loss\t{loss_metatype.item()}\tnearby_accu\t{correct_nearby.item() / float(n_items_batch)}\tmeta_type_accu\t{correct_meta_type.item() / float(n_items_batch)}'
                 logger.info(log_str)
 
-                print_str = f'[{epoch}: {batch_id}/{num_batch}] train loss: {loss_all.item()}, eula loss: {loss_eula.item()}, nearby loss: {loss_nearby.item()},metatype loss: {loss_metatype.item()}, nearby accu: {correct_nearby.item() / float(n_items_batch)}, meta type accu: {correct_meta_type.item() / float(n_items_batch)}'
+                prit_loss_MAD = loss_all.item()
+                prit_acc_ADJ = correct_nearby.item() / float(n_items_batch)
+                prit_acc_PMT = correct_meta_type.item() / float(n_items_batch)
+
+                print_str = f'[{epoch}: {batch_id}/{num_batch}] MAD MSE loss: {prit_loss_MAD}, Acc.ADJ: {prit_acc_ADJ}, Acc.PMT: {prit_acc_PMT}'
                 print(print_str)
 
             scheduler.step()
