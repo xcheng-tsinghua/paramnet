@@ -281,7 +281,8 @@ class GCN3D(nn.Module):
 
     def forward(self,  vertices: "(bs, 3, vertice_num)", fea: "(bs, fea_channel, vertice_num)"=None):
         vertices = vertices.permute(0, 2, 1)
-        fea = fea.permute(0, 2, 1)
+        if fea is not None:
+            fea = fea.permute(0, 2, 1)
 
         bs, vertice_num, _ = vertices.size()
 
@@ -316,10 +317,17 @@ class GCN3D(nn.Module):
 
 
 if __name__ == '__main__':
+    # atensor = torch.rand(5, 3, 1000).cuda()
+    # fea = torch.rand(5, 7, 1000).cuda()
+    # anet = GCN3D(43, fea_channel=7).cuda()
+    # aout = anet(atensor, fea)
+    #
+    # print(aout.size())
+
+
     atensor = torch.rand(5, 3, 1000).cuda()
-    fea = torch.rand(5, 7, 1000).cuda()
-    anet = GCN3D(43, fea_channel=7).cuda()
-    aout = anet(atensor, fea)
+    anet = GCN3D(43).cuda()
+    aout = anet(atensor)
 
     print(aout.size())
 

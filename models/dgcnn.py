@@ -117,16 +117,12 @@ class DGCNN(nn.Module):
 
 
 def test():
-    # sys.path.append("..")
-    # from util import parameter_number
-    import time
 
     device = torch.device('cuda:0')
     points = torch.randn(8, 3, 1024).to(device)
     fea = torch.rand(8, 7, 1024).cuda()
     model = DGCNN(36).to(device)
 
-    start = time.time()
     out = model(points)
 
     # print("Inference time: {}".format(time.time() - start))

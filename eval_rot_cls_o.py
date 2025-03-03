@@ -153,8 +153,10 @@ def main(args):
     '''训练'''
     if args.is_train == 'True':
         is_train = True
+        print(Fore.BLACK + Back.BLUE + 'train model')
     else:
         is_train = False
+        print(Fore.BLACK + Back.BLUE + 'evaluating model only')
 
     best_instance_accu = -1.0
     for epoch in range(args.epoch):
