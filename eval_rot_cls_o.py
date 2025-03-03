@@ -40,7 +40,7 @@ def parse_args():
     parser.add_argument('--rotate', default=0, type=float, help='Degree of rotate angle, not radius')
     parser.add_argument('--model', type=str, default='GCN3D', choices=['GCN3D', 'DGCNN', 'PointNet', 'PointNet2', 'PointConv', 'PointCNN', 'PPFNet'], help='model used for cls')
 
-    parser.add_argument('--is_train', default='False', choices=['True', 'False'], type=str, help='training the model?')
+    parser.add_argument('--is_train', default='True', choices=['True', 'False'], type=str, help='training the model?')
 
     parser.add_argument('--local', default='False', choices=['True', 'False'], type=str, help='runing on local?')
     parser.add_argument('--root_sever', type=str, default=r'/root/my_data/data_set/STEP20000_Hammersley_2000', help='---')
