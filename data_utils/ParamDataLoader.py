@@ -329,7 +329,8 @@ class MCBDataLoader(Dataset):
                  data_augmentation=True,  # 是否加噪音
                  is_back_addattr=False,
                  rotate=0,
-                 is_load_all=False  # 是否直接返回root下的全部文件，忽略路径。用于约束预测用
+                 is_load_all=False,  # 是否直接返回root下的全部文件，忽略路径。用于约束预测用
+                 is_back_froot=False,  # 是否返回文件路径，制作预测约束点云用
                  ):
         """
         定位文件的路径如下：
@@ -368,6 +369,7 @@ class MCBDataLoader(Dataset):
         self.is_back_addattr = is_back_addattr
         self.rotate = rotate
         self.is_load_all = is_load_all
+        self.is_back_froot = is_back_froot
 
         print('MCB dataset, from:' + root)
 
@@ -446,7 +448,11 @@ class MCBDataLoader(Dataset):
             point_set[:, [0, 2]] = point_set[:, [0, 2]].dot(rotation_matrix)  # random rotation # 仅仅是x，y分量作旋转-----------
 
         if self.is_back_addattr:
-            return point_set, cls, euler, near, meta
+            if self.is_back_froot:
+                return point_set, cls, euler, near, meta, fn[0]
+
+            else:
+                return point_set, cls, euler, near, meta
 
         else:
             return point_set, cls

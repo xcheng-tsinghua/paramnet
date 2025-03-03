@@ -35,7 +35,6 @@ def parse_args():
     parser.add_argument('--use_cpu', action='store_true', default=False, help='use cpu mode') # 是否使用CPU
     parser.add_argument('--gpu', type=str, default='0', help='specify gpu device') # 指定的GPU设备
     parser.add_argument('--bs', type=int, default=16, help='batch size in training') # batch_size
-    parser.add_argument('--model', default='pointnet2_cls_ssg', help='model name [default: pointnet_cls]') # 已训练好的分类模型
     parser.add_argument('--epoch', default=30, type=int, help='number of epoch in training') # 训练的epoch数
     parser.add_argument('--learning_rate', default=1e-4, type=float, help='learning rate in training') # 学习率
     parser.add_argument('--num_point', type=int, default=2000, help='Point Number') # 点数量

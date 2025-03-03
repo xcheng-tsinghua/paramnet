@@ -118,17 +118,31 @@ class DGCNN(nn.Module):
 
 def test():
 
+    # device = torch.device('cuda:0')
+    # points = torch.randn(8, 3, 1024).to(device)
+    # fea = torch.rand(8, 7, 1024).cuda()
+    # model = DGCNN(36).to(device)
+    #
+    # out = model(points)
+    #
+    # # print("Inference time: {}".format(time.time() - start))
+    # # print("Parameter #: {}".format(parameter_number(model)))
+    # # print("Input size: {}".format(points.size()))
+    # print("Out   size: {}".format(out.size()))
+
+
     device = torch.device('cuda:0')
     points = torch.randn(8, 3, 1024).to(device)
-    fea = torch.rand(8, 7, 1024).cuda()
-    model = DGCNN(36).to(device)
+    fea = torch.rand(8, 9, 1024).cuda()
+    model = DGCNN(36, 9).to(device)
 
-    out = model(points)
+    out = model(points, fea)
 
     # print("Inference time: {}".format(time.time() - start))
     # print("Parameter #: {}".format(parameter_number(model)))
     # print("Input size: {}".format(points.size()))
     print("Out   size: {}".format(out.size()))
+
 
 
 if __name__ == "__main__":
