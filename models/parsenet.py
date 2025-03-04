@@ -53,7 +53,7 @@ def get_graph_feature(x, k1=20, k2=20, idx=None):
 
 
 class DGCNNEncoderGn(nn.Module):
-    def __init__(self, input_channels=3, nn_nb=20):
+    def __init__(self, input_channels=3, nn_nb=80):
         super(DGCNNEncoderGn, self).__init__()
         self.k = nn_nb
         self.dilation_factor = 1
@@ -75,8 +75,10 @@ class DGCNNEncoderGn(nn.Module):
                                    self.bn3,
                                    nn.LeakyReLU(negative_slope=0.2))
 
-        self.mlp1 = nn.Conv1d(256, 256, 1)
-        self.bnmlp1 = nn.GroupNorm(8, 256)
+        self.mlp1 = nn.Conv1d(256, 1024, 1)
+        self.bnmlp1 = nn.GroupNorm(8, 1024)
+        self.mlp1 = nn.Conv1d(256, 1024, 1)
+        self.bnmlp1 = nn.GroupNorm(8, 1024)
 
     def forward(self, x):
         batch_size = x.size(0)
@@ -121,28 +123,28 @@ class PrimitivesEmbeddingDGCNGn(nn.Module):
         self.encoder = DGCNNEncoderGn(input_channels=3, nn_nb=80)
         self.drop = 0.0
 
-        self.conv1 = torch.nn.Conv1d(256 + 256, 256, 1)
+        self.conv1 = torch.nn.Conv1d(1024 + 256, 512, 1)
 
-        self.bn1 = nn.GroupNorm(8, 256)
-        self.conv2 = torch.nn.Conv1d(256, 128, 1)
+        self.bn1 = nn.GroupNorm(8, 512)
+        self.conv2 = torch.nn.Conv1d(512, 256, 1)
 
-        self.bn2 = nn.GroupNorm(4, 128)
+        self.bn2 = nn.GroupNorm(4, 256)
 
         self.softmax = torch.nn.Softmax(dim=1)
         self.logsoftmax = torch.nn.LogSoftmax(dim=1)
         self.tanh = torch.nn.Tanh()
 
-        self.mlp_norm_prob1 = torch.nn.Conv1d(128, 64, 1)
-        self.mlp_norm_prob2 = torch.nn.Conv1d(64, 3, 1)
-        self.bn_norm_prob1 = nn.GroupNorm(4, 64)
+        self.mlp_norm_prob1 = torch.nn.Conv1d(256, 256, 1)
+        self.mlp_norm_prob2 = torch.nn.Conv1d(256, 3, 1)
+        self.bn_norm_prob1 = nn.GroupNorm(4, 256)
 
-        self.mlp_near_prob1 = torch.nn.Conv1d(128, 64, 1)
-        self.mlp_near_prob2 = torch.nn.Conv1d(64, 2, 1)
-        self.bn_near_prob1 = nn.GroupNorm(4, 64)
+        self.mlp_near_prob1 = torch.nn.Conv1d(256, 256, 1)
+        self.mlp_near_prob2 = torch.nn.Conv1d(256, 2, 1)
+        self.bn_near_prob1 = nn.GroupNorm(4, 256)
 
-        self.mlp_prim_prob1 = torch.nn.Conv1d(128, 64, 1)
-        self.mlp_prim_prob2 = torch.nn.Conv1d(64, 4, 1)
-        self.bn_prim_prob1 = nn.GroupNorm(4, 64)
+        self.mlp_prim_prob1 = torch.nn.Conv1d(256, 256, 1)
+        self.mlp_prim_prob2 = torch.nn.Conv1d(256, 4, 1)
+        self.bn_prim_prob1 = nn.GroupNorm(4, 256)
 
     def forward(self, points):
         points = points.transpose(-1, -2)
@@ -152,7 +154,7 @@ class PrimitivesEmbeddingDGCNGn(nn.Module):
         x, first_layer_features = self.encoder(points)
 
         # first_layer_features = first_layer_features[:, :, self.l_permute]
-        x = x.view(batch_size, 256, 1).repeat(1, 1, num_points)
+        x = x.view(batch_size, 1024, 1).repeat(1, 1, num_points)
         x = torch.cat([x, first_layer_features], 1)
 
         x = F.dropout(F.relu(self.bn1(self.conv1(x))), self.drop)
@@ -173,20 +175,3 @@ class PrimitivesEmbeddingDGCNGn(nn.Module):
         meta_type = meta_type.transpose(-1, -2)
 
         return euler_angle, edge_nearby, meta_type
-
-
-if __name__ == '__main__':
-    anet = PrimitivesEmbeddingDGCNGn(0, 0).cuda()
-    atensor = torch.rand(2, 2000, 3).cuda()
-    md, adj, pmt = anet(atensor)
-
-    print(md.size())
-    print(adj.size())
-    print(pmt.size())
-
-    pass
-
-
-
-
-
