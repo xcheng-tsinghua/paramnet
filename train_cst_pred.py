@@ -46,8 +46,9 @@ def parse_args():
 
     # parser.add_argument('--is_train', default='True', choices=['True', 'False'], type=str, help='---')
     parser.add_argument('--local', default='False', choices=['True', 'False'], type=str, help='---')
+    parser.add_argument('--abc_pack', type=int, default=-1, help='pack of abc')  # 点数量
     parser.add_argument('--root_sever', type=str,
-                        default=r'/root/my_data/data_set/STEP20000_Hammersley_2000',
+                        default=r'/root/my_data/data_set/STEPMillion/STEPMillion_pack{pack_idx}/overall',
                         help='root of dataset')
     parser.add_argument('--root_local', type=str,
                         default=r'D:\document\DeepLearning\DataSet\STEP20000_Hammersley_2000',
@@ -92,14 +93,22 @@ def main(args):
     else:
         data_root = args.root_sever
 
-    # train_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, data_augmentation=True, is_train=True, is_back_addattr=True)
-    # train_dataset = STEPMillionDataLoader(root=data_root, npoints=args.num_point, data_augmentation=True)
-    # train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.bs, shuffle=True, num_workers=5)  # , drop_last=True
+    if args.abc_pack != -1:
+        print('use abc dataset')
+        train_root = data_root.replace('{pack_idx}', args.abc_pack)
 
-    train_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, data_augmentation=False, is_back_addattr=True)
-    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.bs, shuffle=True, num_workers=5)  # , drop_last=True
-    test_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, data_augmentation=False, is_back_addattr=True, is_train=False)
-    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.bs, shuffle=True, num_workers=5)  # , drop_last=True
+        train_dataset = STEPMillionDataLoader(root=train_root, npoints=args.num_point, data_augmentation=False)
+        train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.bs, shuffle=True, num_workers=5)  # , drop_last=True
+
+        test_root = data_root.replace('{pack_idx}', 21)
+        test_dataset = STEPMillionDataLoader(root=test_root, npoints=args.num_point, data_augmentation=False)
+        test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.bs, shuffle=True, num_workers=5)  # , drop_last=True
+
+    else:
+        train_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, data_augmentation=False, is_back_addattr=True)
+        train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.bs, shuffle=True, num_workers=5)  # , drop_last=True
+        test_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, data_augmentation=False, is_back_addattr=True, is_train=False)
+        test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.bs, shuffle=True, num_workers=5)  # , drop_last=True
 
     '''MODEL LOADING'''
     print(Fore.BLACK + Back.BLUE + f'pred model: {args.model}')

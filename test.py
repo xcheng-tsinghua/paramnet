@@ -43,12 +43,14 @@ if __name__ == '__main__':
     # a = np.array([[1, 4], [6, 5], [6, 8]])
     # a = np.insert(a, 1, [9, 9], axis=0)
     # print(a)
+    #
+    # a = [1, 2, 3, 4, 5, 6]
+    # print(np.mean(a))
 
-    a = [1, 2, 3, 4, 5, 6]
-    print(np.mean(a))
+    astr = 'asas_aaa'
+    bstr = astr.replace('aaa', '-----')
 
-
-
+    print(astr, bstr)
 
     pass
 
