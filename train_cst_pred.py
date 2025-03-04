@@ -100,7 +100,7 @@ def main(args):
         train_dataset = STEPMillionDataLoader(root=train_root, npoints=args.num_point, data_augmentation=False)
         train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.bs, shuffle=True, num_workers=5)  # , drop_last=True
 
-        test_root = data_root.replace('{pack_idx}', 21)
+        test_root = data_root.replace('{pack_idx}', str(21))
         test_dataset = STEPMillionDataLoader(root=test_root, npoints=args.num_point, data_augmentation=False)
         test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.bs, shuffle=True, num_workers=5)  # , drop_last=True
 
