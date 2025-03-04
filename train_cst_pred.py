@@ -35,7 +35,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--bs', type=int, default=25, help='batch size in training') # batch_size
-    parser.add_argument('--epoch', default=10, type=int, help='number of epoch in training') # 训练的epoch数
+    parser.add_argument('--epoch', default=25, type=int, help='number of epoch in training') # 训练的epoch数
     parser.add_argument('--learning_rate', default=1e-4, type=float, help='learning rate in training') # 学习率
     parser.add_argument('--num_point', type=int, default=2000, help='Point Number') # 点数量
     parser.add_argument('--n_metatype', type=int, default=4, help='number of considered meta type')  # 计算约束时考虑的基元数, [0-13)共13种
