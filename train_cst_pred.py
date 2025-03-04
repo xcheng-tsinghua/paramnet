@@ -19,36 +19,32 @@ import logging # 记录日志信息
 import argparse
 from colorama import Fore, Back, Style, init
 import numpy as np
+from tqdm import tqdm
 
 # 自定义模块
 # from models.TriFeaPred import TriFeaPred
 from data_utils.ParamDataLoader import ParamDataLoader
 from data_utils.ParamDataLoader import MCBDataLoader, STEPMillionDataLoader
 
-from models.TriFeaPred_OrigValid import TriFeaPred_OrigValid as cst_pcd
-# from models.hpnet import PrimitiveNet as cst_pcd
-# from models.parsenet import PrimitivesEmbeddingDGCNGn as cst_pcd
+from models.TriFeaPred_OrigValid import TriFeaPred_OrigValid
+from models.hpnet import PrimitiveNet
+from models.parsenet import PrimitivesEmbeddingDGCNGn
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--use_cpu', action='store_true', default=False, help='use cpu mode') # 是否使用CPU
-    parser.add_argument('--gpu', type=str, default='0', help='specify gpu device') # 指定的GPU设备
-    parser.add_argument('--bs', type=int, default=16, help='batch size in training') # batch_size
-    parser.add_argument('--epoch', default=30, type=int, help='number of epoch in training') # 训练的epoch数
+
+    parser.add_argument('--bs', type=int, default=25, help='batch size in training') # batch_size
+    parser.add_argument('--epoch', default=10, type=int, help='number of epoch in training') # 训练的epoch数
     parser.add_argument('--learning_rate', default=1e-4, type=float, help='learning rate in training') # 学习率
     parser.add_argument('--num_point', type=int, default=2000, help='Point Number') # 点数量
-    parser.add_argument('--optimizer', type=str, default='Adam', help='optimizer for training') # 优化器
-
     parser.add_argument('--n_metatype', type=int, default=4, help='number of considered meta type')  # 计算约束时考虑的基元数, [0-13)共13种
 
-    parser.add_argument('--save_str', type=str, default='cst_pcd_abc25t', help='dataloader workers')
+    parser.add_argument('--is_load_weight', type=str, default='True', choices=['True', 'False'], help='---')
+    parser.add_argument('--model', type=str, default='hpnet', choices=['hpnet', 'parsenet', 'cstpcd'], help='model used for pred')
+    parser.add_argument('--save_str', type=str, default='parsenet', help='dataloader workers')  # cst_pcd_abc25t
 
-    parser.add_argument('--abc_pack', type=int, default=-1, help='dataloader workers')
-
-    parser.add_argument('--rotate', default=0, type=float, help='---')
-
-    parser.add_argument('--is_train', default='True', choices=['True', 'False'], type=str, help='---')
+    # parser.add_argument('--is_train', default='True', choices=['True', 'False'], type=str, help='---')
     parser.add_argument('--local', default='False', choices=['True', 'False'], type=str, help='---')
     parser.add_argument('--root_sever', type=str,
                         default=r'/root/my_data/data_set/STEP20000_Hammersley_2000',
@@ -90,135 +86,133 @@ def main(args):
     logger.addHandler(file_handler)
 
     '''HYPER PARAMETER'''
-    # os.environ[‘CUDA_VISIBLE_DEVICES‘] 使用指定的GPU及GPU显存
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
-
     # 定义数据集，训练集及对应加载器
     if args.local == 'True':
         data_root = args.root_local
     else:
         data_root = args.root_sever
 
-    abc_pack = args.abc_pack
-    if not abc_pack == -1:
-        print(Fore.BLACK + Back.GREEN + f'execute ABC pack trans to pack {abc_pack}')
-        data_root = str(data_root).replace('{pack_idx}', str(abc_pack))
-
     # train_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, data_augmentation=True, is_train=True, is_back_addattr=True)
     # train_dataset = STEPMillionDataLoader(root=data_root, npoints=args.num_point, data_augmentation=True)
     # train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.bs, shuffle=True, num_workers=5)  # , drop_last=True
 
-    train_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, data_augmentation=False, is_back_addattr=True, is_load_all=True)
+    train_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, data_augmentation=False, is_back_addattr=True)
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.bs, shuffle=True, num_workers=5)  # , drop_last=True
+    test_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, data_augmentation=False, is_back_addattr=True, is_train=False)
+    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.bs, shuffle=True, num_workers=5)  # , drop_last=True
 
     '''MODEL LOADING'''
-    predictor = cst_pcd(n_points_all=args.num_point, n_metatype=args.n_metatype).cuda()
+    print(Fore.BLACK + Back.BLUE + f'pred model: {args.model}')
+    if args.model == 'cstpcd':
+        predictor = TriFeaPred_OrigValid(n_points_all=args.num_point, n_metatype=args.n_metatype).cuda()
+    elif args.model == 'hpnet':
+        predictor = PrimitiveNet(n_points_all=args.num_point, n_metatype=args.n_metatype).cuda()
+    elif args.model == 'parsenet':
+        predictor = PrimitivesEmbeddingDGCNGn(n_points_all=args.num_point, n_metatype=args.n_metatype).cuda()
+    else:
+        raise TypeError('error model name!')
 
     model_savepth = 'model_trained/' + save_str + '.pth'
-    try:
-        predictor.load_state_dict(torch.load(model_savepth))
-        print('training from exist model: ' + model_savepth)
-    except:
-        print('no existing model, training from scratch')
+    if args.is_load_weight == 'True':
+        try:
+            predictor.load_state_dict(torch.load(model_savepth))
+            print(Fore.GREEN + 'training from exist model: ' + model_savepth)
+        except:
+            print(Fore.GREEN + 'no existing model, training from scratch')
+    else:
+        print(Fore.BLACK + Back.BLUE + 'does not load state dict, training from scratch')
 
     predictor.apply(inplace_relu)
-    if not args.use_cpu:
-        predictor = predictor.cuda()
 
-    if args.optimizer == 'Adam':
-        optimizer = torch.optim.Adam(
-            predictor.parameters(),
-            lr=args.learning_rate, # 0.001
-            betas=(0.9, 0.999),
-            eps=1e-08,
-            weight_decay=1e-4
-        )
-    else:
-        optimizer = torch.optim.SGD(predictor.parameters(), lr=0.01, momentum=0.9)
+    predictor = predictor.cuda()
 
+
+    optimizer = torch.optim.Adam(
+        predictor.parameters(),
+        lr=args.learning_rate, # 0.001
+        betas=(0.9, 0.999),
+        eps=1e-08,
+        weight_decay=1e-4
+    )
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.7)
-    num_batch = len(train_dataloader)
 
     '''TRANING'''
-    if args.is_train == 'True':
-        is_train = True
-    else:
-        is_train = False
+    for epoch in range(args.epoch):
+        print(f'current epoch: {epoch}/{args.epoch}')
+        predictor = predictor.train()
 
-    if is_train:
-        print(Fore.BLACK + Back.GREEN + 'training mode')
+        acc_mad = []
+        acc_adj = []
+        acc_pmt = []
 
-        for epoch in range(args.epoch):
-            print(f'current epoch: {epoch}/{args.epoch}')
-            predictor = predictor.train()
+        for batch_id, data in tqdm(enumerate(train_dataloader, 0), total=len(train_dataloader)):
+            xyz, eula_angle_label, nearby_label, meta_type_label = data[0], data[-3], data[-2], data[-1]
+            bs, n_points, _ = xyz.size()
+            n_items_batch = bs * n_points
 
-            for batch_id, data in enumerate(train_dataloader, 0):
-                xyz, eula_angle_label, nearby_label, meta_type_label = data[0], data[-3], data[-2], data[-1]
-                bs, n_points, _ = xyz.size()
-                n_items_batch = bs * n_points
+            xyz, eula_angle_label, nearby_label, meta_type_label = xyz.float().cuda(), eula_angle_label.float().cuda(), nearby_label.long().cuda(), meta_type_label.long().cuda()
 
-                if not args.use_cpu:
-                    xyz, eula_angle_label, nearby_label, meta_type_label = xyz.float().cuda(), eula_angle_label.float().cuda(), nearby_label.long().cuda(), meta_type_label.long().cuda()
-                else:
-                    xyz, eula_angle_label, nearby_label, meta_type_label = xyz.float(), eula_angle_label.float(), nearby_label.long(), meta_type_label.long()
+            optimizer.zero_grad()
+            pred_eula_angle, pred_edge_nearby, pred_meta_type = predictor(xyz)
 
-                optimizer.zero_grad()
-                pred_eula_angle, pred_edge_nearby, pred_meta_type = predictor(xyz)
+            # vis_pointcloudattr(point_set[0, :, :].detach().cpu().numpy(), np.argmax(pred_meta_type[0, :, :].detach().cpu().numpy(), axis=1))
 
-                # vis_pointcloudattr(point_set[0, :, :].detach().cpu().numpy(), np.argmax(pred_meta_type[0, :, :].detach().cpu().numpy(), axis=1))
+            loss_eula = F.mse_loss(eula_angle_label, pred_eula_angle)
 
-                loss_eula = F.mse_loss(eula_angle_label, pred_eula_angle)
+            pred_edge_nearby = pred_edge_nearby.contiguous().view(-1, 2)
+            nearby_label = nearby_label.view(-1)
+            loss_nearby = F.nll_loss(pred_edge_nearby, nearby_label)
 
-                pred_edge_nearby = pred_edge_nearby.contiguous().view(-1, 2)
-                nearby_label = nearby_label.view(-1)
-                loss_nearby = F.nll_loss(pred_edge_nearby, nearby_label)
+            pred_meta_type = pred_meta_type.contiguous().view(-1, args.n_metatype)
+            meta_type_label = meta_type_label.view(-1)
+            loss_metatype = F.nll_loss(pred_meta_type, meta_type_label)
 
-                pred_meta_type = pred_meta_type.contiguous().view(-1, args.n_metatype)
-                meta_type_label = meta_type_label.view(-1)
-                loss_metatype = F.nll_loss(pred_meta_type, meta_type_label)
+            loss_all = loss_eula + loss_nearby + loss_metatype
 
-                loss_all = loss_eula + loss_nearby + loss_metatype
+            loss_all.backward()
+            optimizer.step()
 
-                loss_all.backward()
-                optimizer.step()
+            # accu
+            choice_nearby = pred_edge_nearby.data.max(1)[1]
+            correct_nearby = choice_nearby.eq(nearby_label.data).cpu().sum()
+            choice_meta_type = pred_meta_type.data.max(1)[1]
+            correct_meta_type = choice_meta_type.eq(meta_type_label.data).cpu().sum()
 
-                # accu
-                choice_nearby = pred_edge_nearby.data.max(1)[1]
-                correct_nearby = choice_nearby.eq(nearby_label.data).cpu().sum()
-                choice_meta_type = pred_meta_type.data.max(1)[1]
-                correct_meta_type = choice_meta_type.eq(meta_type_label.data).cpu().sum()
+            # log_str = f'train_loss\t{loss_all.item()}\teula_loss\t{loss_eula.item()}\tnearby_loss\t{loss_nearby.item()}\tmetatype_loss\t{loss_metatype.item()}\tnearby_accu\t{correct_nearby.item() / float(n_items_batch)}\tmeta_type_accu\t{correct_meta_type.item() / float(n_items_batch)}'
+            # logger.info(log_str)
 
-                log_str = f'train_loss\t{loss_all.item()}\teula_loss\t{loss_eula.item()}\tnearby_loss\t{loss_nearby.item()}\tmetatype_loss\t{loss_metatype.item()}\tnearby_accu\t{correct_nearby.item() / float(n_items_batch)}\tmeta_type_accu\t{correct_meta_type.item() / float(n_items_batch)}'
-                logger.info(log_str)
+            prit_loss_MAD = loss_all.detach().item()
+            prit_acc_ADJ = correct_nearby.item() / float(n_items_batch)
+            prit_acc_PMT = correct_meta_type.item() / float(n_items_batch)
 
-                prit_loss_MAD = loss_all.item()
-                prit_acc_ADJ = correct_nearby.item() / float(n_items_batch)
-                prit_acc_PMT = correct_meta_type.item() / float(n_items_batch)
+            acc_mad.append(prit_loss_MAD)
+            acc_adj.append(prit_acc_ADJ)
+            acc_pmt.append(prit_acc_PMT)
 
-                print_str = f'[{epoch}: {batch_id}/{num_batch}] MAD MSE loss: {prit_loss_MAD}, Acc.ADJ: {prit_acc_ADJ}, Acc.PMT: {prit_acc_PMT}'
-                print(print_str)
+            # print_str = f'[{epoch}: {batch_id}/{num_batch}] MAD MSE loss: {prit_loss_MAD}, Acc.ADJ: {prit_acc_ADJ}, Acc.PMT: {prit_acc_PMT}'
+            # print(print_str)
 
-            scheduler.step()
-            torch.save(predictor.state_dict(), model_savepth)
+        train_acc_mad = np.mean(acc_mad)
+        train_acc_adj = np.mean(acc_adj)
+        train_acc_pmt = np.mean(acc_pmt)
 
-    else:
-        print(Fore.BLACK + Back.GREEN + 'eval mode')
+        scheduler.step()
+        print('save model to:' + model_savepth)
+        torch.save(predictor.state_dict(), model_savepth)
 
         with torch.no_grad():
             predictor = predictor.eval()
-            euler_loss_set = []
-            nearby_acc_set = []
-            meta_acc_set = []
 
-            for batch_id, data in enumerate(train_dataloader, 0):
+            acc_mad = []
+            acc_adj = []
+            acc_pmt = []
+
+            for batch_id, data in tqdm(enumerate(test_dataloader, 0), total=len(test_dataloader)):
                 xyz, eula_angle_label, nearby_label, meta_type_label = data[0], data[-3], data[-2], data[-1]
                 bs, n_points, _ = xyz.size()
                 n_items_batch = bs * n_points
 
-                if not args.use_cpu:
-                    xyz, eula_angle_label, nearby_label, meta_type_label = xyz.float().cuda(), eula_angle_label.float().cuda(), nearby_label.long().cuda(), meta_type_label.long().cuda()
-                else:
-                    xyz, eula_angle_label, nearby_label, meta_type_label = xyz.float(), eula_angle_label.float(), nearby_label.long(), meta_type_label.long()
+                xyz, eula_angle_label, nearby_label, meta_type_label = xyz.float().cuda(), eula_angle_label.float().cuda(), nearby_label.long().cuda(), meta_type_label.long().cuda()
 
                 pred_eula_angle, pred_edge_nearby, pred_meta_type = predictor(xyz)
 
@@ -235,34 +229,28 @@ def main(args):
                 choice_meta_type = pred_meta_type.data.max(1)[1]
                 correct_meta_type = choice_meta_type.eq(meta_type_label.data).cpu().sum()
 
-                euler_loss = loss_eula.item()
+                euler_loss = loss_eula.detach().item()
                 nearby_acc = correct_nearby.item() / float(n_items_batch)
                 meta_acc = correct_meta_type.item() / float(n_items_batch)
 
-                euler_loss_set.append(euler_loss)
-                nearby_acc_set.append(nearby_acc)
-                meta_acc_set.append(meta_acc)
+                acc_mad.append(euler_loss)
+                acc_adj.append(nearby_acc)
+                acc_pmt.append(meta_acc)
 
-                log_str = f'eula_loss\t{euler_loss}\tnearby_accu\t{nearby_acc}\tmeta_type_accu\t{meta_acc}'
-                logger.info(log_str)
+                # log_str = f'eula_loss\t{euler_loss}\tnearby_accu\t{nearby_acc}\tmeta_type_accu\t{meta_acc}'
+                # logger.info(log_str)
+                #
+                # print_str = f'[eula loss: {euler_loss}, nearby accu: {nearby_acc}, meta type accu: {meta_acc}'
+                # print(print_str)
 
-                print_str = f'[eula loss: {euler_loss}, nearby accu: {nearby_acc}, meta type accu: {meta_acc}'
-                print(print_str)
+            test_acc_mad = np.mean(acc_mad)
+            test_acc_adj = np.mean(acc_adj)
+            test_acc_pmt = np.mean(acc_pmt)
 
-            euler_loss_all = np.mean(euler_loss_set)
-            nearby_acc_all = np.mean(nearby_acc_set)
-            meta_acc_all = np.mean(meta_acc_set)
-
-            log_str = f'eula_loss_all\t{euler_loss_all}\tnearby_accu_all\t{nearby_acc_all}\tmeta_type_accu_all\t{meta_acc_all}'
+            log_str = f'{epoch}/{args.epoch}\ttrain_mad_adj_pmt\t{train_acc_mad}\t{train_acc_adj}\t{train_acc_pmt}\ttest_mad_adj_pmt\t{test_acc_mad}\t{test_acc_adj}\t{test_acc_pmt}'
             logger.info(log_str)
 
-            print_str = f'[eula loss all: {euler_loss_all}, nearby accu all: {nearby_acc_all}, meta type accu all: {meta_acc_all}'
-            print(print_str)
-
-            tres = 0.02
-            if abs(euler_loss_all - 0.0717) < tres and abs(nearby_acc_all - 0.8555) < tres and abs(meta_acc_all - 0.8646) < tres:
-                print(Fore.BLACK + Back.GREEN + f'end training res: MAD-{euler_loss_all}, ADJ-{nearby_acc_all}, PMT-{meta_acc_all}')
-                exit(0)
+            print(log_str.replace('\t', ' '))
 
 
 def clear_log(log_dir):
