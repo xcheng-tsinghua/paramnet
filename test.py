@@ -28,17 +28,21 @@ def test():
 
 if __name__ == '__main__':
     # test()
-    cla = 2
-    alabel = torch.randint(0, cla, (10,)).numpy()
+    # cla = 2
+    # alabel = torch.randint(0, cla, (10,)).numpy()
+    #
+    # print(alabel)
+    # bainsas = label_binarize(alabel, classes=np.arange(cla))
+    #
+    # if cla == 2:
+    #     bainsas_rev = 1 - bainsas
+    #     bainsas = np.concatenate([bainsas_rev, bainsas], axis=1)
+    #
+    # print(bainsas)
 
-    print(alabel)
-    bainsas = label_binarize(alabel, classes=np.arange(cla))
-
-    if cla == 2:
-        bainsas_rev = 1 - bainsas
-        bainsas = np.concatenate([bainsas_rev, bainsas], axis=1)
-
-    print(bainsas)
+    a = np.array([[1, 4], [6, 5], [6, 8]])
+    a = np.insert(a, 1, [9, 9], axis=0)
+    print(a)
 
 
     pass
