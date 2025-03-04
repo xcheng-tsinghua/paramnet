@@ -52,12 +52,13 @@ def parse_args():
     # 输入参数如下：
     parser = argparse.ArgumentParser('training')
     parser.add_argument('--gpu', type=str, default='0', help='specify gpu device') # 指定的GPU设备
-    parser.add_argument('--batch_size', type=int, default=43, help='batch size in training') # batch_size
+    parser.add_argument('--bs', type=int, default=43, help='batch size in training') # batch_size
     parser.add_argument('--epoch', default=35, type=int, help='number of epoch in training') # 训练的epoch数
     parser.add_argument('--learning_rate', default=1e-4, type=float, help='learning rate in training') # 学习率
     parser.add_argument('--decay_rate', type=float, default=1e-4, help='decay rate')
     parser.add_argument('--n_metatype', type=int, default=4, help='number of considered meta type')  # 计算约束时考虑的基元数
     parser.add_argument('--num_point', type=int, default=2000, help='Point Number') # 点数量
+    parser.add_argument('--is_load_weight', type=str, default='True', choices=['True', 'False'], help='---')
 
     parser.add_argument('--is_use_pred_addattr', type=str, default='True', choices=['True', 'False'], help='---') # 点数量
     parser.add_argument('--save_str', type=str, default='ca_final', help='---')
@@ -143,12 +144,12 @@ def main(args):
     num_class = len(train_dataset.classes)
 
     # sampler = torch.utils.data.RandomSampler(train_dataset, num_samples=32, replacement=False)  # 随机选取 100 个样本
-    # trainDataLoader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, num_workers=4, sampler=sampler)
+    # trainDataLoader = torch.utils.data.DataLoader(train_dataset, batch_size=args.bs, num_workers=4, sampler=sampler)
     # sampler = torch.utils.data.RandomSampler(test_dataset, num_samples=32, replacement=False)  # 随机选取 100 个样本
-    # testDataLoader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, num_workers=4, sampler=sampler)
+    # testDataLoader = torch.utils.data.DataLoader(test_dataset, batch_size=args.bs, num_workers=4, sampler=sampler)
 
-    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4)
-    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
+    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.bs, shuffle=True, num_workers=4)
+    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.bs, shuffle=False, num_workers=4)
 
     '''MODEL LOADING'''
     # 获取分类模型
@@ -164,11 +165,15 @@ def main(args):
         raise TypeError('error model name!')
 
     model_savepth = 'model_trained/' + save_str + '.pth'
-    try:
-        classifier.load_state_dict(torch.load(model_savepth))
-        print(Fore.GREEN + 'training from exist model: ' + model_savepth)
-    except:
-        print(Fore.GREEN + 'no existing model, training from scratch')
+
+    if args.is_load_weight == 'True':
+        try:
+            classifier.load_state_dict(torch.load(model_savepth))
+            print(Fore.GREEN + 'training from exist model: ' + model_savepth)
+        except:
+            print(Fore.GREEN + 'no existing model, training from scratch')
+    else:
+        print(Fore.BLACK + Back.BLUE + 'does not load state dict, training from scratch')
 
     if is_use_pred_addattr:
         try:
