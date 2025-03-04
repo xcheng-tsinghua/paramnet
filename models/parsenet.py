@@ -53,7 +53,7 @@ def get_graph_feature(x, k1=20, k2=20, idx=None):
 
 
 class DGCNNEncoderGn(nn.Module):
-    def __init__(self, input_channels=3, nn_nb=80):
+    def __init__(self, input_channels=3, nn_nb=20):
         super(DGCNNEncoderGn, self).__init__()
         self.k = nn_nb
         self.dilation_factor = 1
