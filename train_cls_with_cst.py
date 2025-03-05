@@ -2,13 +2,6 @@
 带约束的训练
 包含预测约束与label约束
 """
-
-
-"""
-用于训练目前论文中确定的模型
-Cross Attention 分类训练脚本
-"""
-
 import os
 import sys
 # 获取当前文件的绝对路径
@@ -43,8 +36,8 @@ from models.PointConv import PointConv
 from models.PointCNN import PointCNN
 from models.PointNet2 import PointNet2
 from models.PPFNet import PPFNet
-from models.CrossAttention_Cls import CrossAttention_Cls as model_cls
 from data_utils.ParamDataLoader import all_metric_cls, PrismCuboidDataLoader
+from models.CrossAttention_Cls import CrossAttention_Cls
 
 
 def parse_args():
@@ -58,13 +51,13 @@ def parse_args():
     parser.add_argument('--decay_rate', type=float, default=1e-4, help='decay rate')
     parser.add_argument('--n_metatype', type=int, default=4, help='number of considered meta type')  # 计算约束时考虑的基元数
     parser.add_argument('--num_point', type=int, default=2000, help='Point Number') # 点数量
-    parser.add_argument('--is_load_weight', type=str, default='True', choices=['True', 'False'], help='---')
+    parser.add_argument('--is_load_weight', type=str, default='False', choices=['True', 'False'], help='---')
 
-    parser.add_argument('--is_use_pred_addattr', type=str, default='True', choices=['True', 'False'], help='---') # 点数量
+    parser.add_argument('--is_use_pred_addattr', type=str, default='False', choices=['True', 'False'], help='---') # 点数量
     parser.add_argument('--save_str', type=str, default='ca_final', help='---')
     parser.add_argument('--rotate', default=0, type=int, help='---')
     parser.add_argument('--cst_pcd', type=str, default='cst_pcd_abc25t.pth', help='---')
-    parser.add_argument('--model', type=str, default='PointNet2', choices=['GCN3D', 'DGCNN', 'PointNet', 'PointNet2'], help='model used for cls')
+    parser.add_argument('--model', type=str, default='PointNet2', choices=['GCN3D', 'DGCNN', 'PointNet', 'PointNet2', 'CstNet'], help='model used for cls')
 
     parser.add_argument('--local', default='False', choices=['True', 'False'], type=str, help='---')
     parser.add_argument('--root_sever', type=str,
@@ -139,7 +132,7 @@ def main(args):
     else:
         data_root = args.root_sever
 
-    train_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, is_train=True, data_augmentation=False, is_back_addattr=True, rotate=args.rotate)
+    train_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, is_train=False, data_augmentation=False, is_back_addattr=True, rotate=args.rotate)
     test_dataset = MCBDataLoader(root=data_root, npoints=args.num_point, is_train=False, data_augmentation=False, is_back_addattr=True, rotate=args.rotate)
     num_class = len(train_dataset.classes)
 
@@ -161,6 +154,8 @@ def main(args):
         classifier = PointNet(k=num_class, fea_channel=9).cuda()
     elif args.model == 'PointNet2':
         classifier = PointNet2(num_class=num_class, fea_channel=9).cuda()
+    elif args.model == 'CstNet':
+        classifier = CrossAttention_Cls(n_classes=num_class, n_metatype=4).cuda()
     else:
         raise TypeError('error model name!')
 
