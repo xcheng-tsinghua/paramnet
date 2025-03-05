@@ -221,16 +221,17 @@ def main(args):
                 nearby_label = F.one_hot(nearby_label, 2)
                 meta_type_label = F.one_hot(meta_type_label, args.n_metatype)
 
-            cstattr = torch.cat([eula_angle_label, nearby_label, meta_type_label], dim=-1).permute(0, 2, 1)
-
             # -> [bs, 3, n_points]
-            points = points.permute(0, 2, 1)
-            assert points.size()[1] == 3
 
             # 梯度置为零，否则梯度会累加
             optimizer.zero_grad()
 
-            pred = classifier(points, cstattr)
+            if args.model == 'CstNet':
+                pred = classifier(points, eula_angle_label, nearby_label, meta_type_label)
+            else:
+                points = points.permute(0, 2, 1)
+                cstattr = torch.cat([eula_angle_label, nearby_label, meta_type_label], dim=-1).permute(0, 2, 1)
+                pred = classifier(points, cstattr)
             loss = F.nll_loss(pred, target)
 
             # 利用loss更新参数
@@ -274,12 +275,10 @@ def main(args):
                     nearby_label = F.one_hot(nearby_label, 2)
                     meta_type_label = F.one_hot(meta_type_label, args.n_metatype)
 
-                points = points.permute(0, 2, 1)
-                assert points.size()[1] == 3
-
                 if args.model == 'CstNet':
                     pred = classifier(points, eula_angle_label, nearby_label, meta_type_label)
                 else:
+                    points = points.permute(0, 2, 1)
                     cstattr = torch.cat([eula_angle_label, nearby_label, meta_type_label], dim=-1).permute(0, 2, 1)
                     pred = classifier(points, cstattr)
 
