@@ -29,6 +29,7 @@ from data_utils.ParamDataLoader import MCBDataLoader, STEPMillionDataLoader
 from models.TriFeaPred_OrigValid import TriFeaPred_OrigValid
 from models.hpnet import PrimitiveNet
 from models.parsenet import PrimitivesEmbeddingDGCNGn
+from vis.vis import view_pcd_paper, ex_paras
 
 
 def parse_args():
@@ -41,8 +42,8 @@ def parse_args():
     parser.add_argument('--model', type=str, default='hpnet', choices=['hpnet', 'parsenet', 'cstpcd'], help='model used for pred')
     parser.add_argument('--save_str', type=str, default='parsenet', help='dataloader workers')  # cst_pcd_abc25t
 
-    # parser.add_argument('--is_train', default='True', choices=['True', 'False'], type=str, help='---')
-    parser.add_argument('--local', default='False', choices=['True', 'False'], type=str, help='---')
+    parser.add_argument('--is_vis', default='True', choices=['True', 'False'], type=str, help='whether vis pred cst')
+    parser.add_argument('--local', default='True', choices=['True', 'False'], type=str, help='---')
     parser.add_argument('--abc_pack', type=int, default=-1, help='pack of abc')  # 点数量
     parser.add_argument('--root_sever', type=str,
                         default=r'/root/my_data/data_set/STEP20000_Hammersley_2000',
@@ -133,13 +134,22 @@ def main(args):
         acc_pmt = []
 
         for batch_id, data in tqdm(enumerate(test_dataloader, 0), total=len(test_dataloader)):
-            xyz, eula_angle_label, nearby_label, meta_type_label = data[0], data[-3], data[-2], data[-1]
+            xyz, eula_angle_label, nearby_label, meta_type_label = data[0], data[2], data[3], data[4]
             bs, n_points, _ = xyz.size()
             n_items_batch = bs * n_points
 
             xyz, eula_angle_label, nearby_label, meta_type_label = xyz.float().cuda(), eula_angle_label.float().cuda(), nearby_label.long().cuda(), meta_type_label.long().cuda()
 
             pred_eula_angle, pred_edge_nearby, pred_meta_type = predictor(xyz)
+
+            # 显示预测结果
+            if args.is_vis == 'True':
+                coor, mad, adj, pmt = ex_paras(xyz, pred_eula_angle, pred_edge_nearby, pred_meta_type, 0)
+
+                view_pcd_paper(coor, mad)
+
+
+
 
             loss_eula = F.mse_loss(eula_angle_label, pred_eula_angle)
             pred_edge_nearby = pred_edge_nearby.contiguous().view(-1, 2)
