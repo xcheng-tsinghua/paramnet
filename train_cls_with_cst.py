@@ -274,12 +274,14 @@ def main(args):
                     nearby_label = F.one_hot(nearby_label, 2)
                     meta_type_label = F.one_hot(meta_type_label, args.n_metatype)
 
-                cstattr = torch.cat([eula_angle_label, nearby_label, meta_type_label], dim=-1).permute(0, 2, 1)
-
                 points = points.permute(0, 2, 1)
                 assert points.size()[1] == 3
 
-                pred = classifier(points, cstattr)
+                if args.model == 'CstNet':
+                    pred = classifier(points, eula_angle_label, nearby_label, meta_type_label)
+                else:
+                    cstattr = torch.cat([eula_angle_label, nearby_label, meta_type_label], dim=-1).permute(0, 2, 1)
+                    pred = classifier(points, cstattr)
 
                 all_preds.append(pred.detach().cpu().numpy())
                 all_labels.append(target.detach().cpu().numpy())
