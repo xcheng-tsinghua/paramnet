@@ -247,13 +247,15 @@ class STEPMillionDataLoader(Dataset):
                  npoints=2500,  # 每个点云文件的点数
                  data_augmentation=True,  # 是否加噪音
                  is_backaddattr=True,
-                 rotate=0.0  # 沿+Z旋转角度
+                 rotate=0.0,  # 沿+Z旋转角度
+                 noise_scale=0.02
                  ):
 
         self.npoints = npoints
         self.data_augmentation = data_augmentation
         self.is_backaddattr = is_backaddattr
         self.rotate = rotate
+        self.noise_scale = noise_scale
 
         print('STEPMillion dataset, from:' + root)
 
@@ -300,7 +302,9 @@ class STEPMillionDataLoader(Dataset):
             # theta = np.random.uniform(0, np.pi * 2)
             # rotation_matrix = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
             # point_set[:, [0, 2]] = point_set[:, [0, 2]].dot(rotation_matrix)  # random rotation # 仅仅是x，y分量作旋转-----------
-            point_set += np.random.normal(0, 0.02, size=point_set.shape)  # random jitter # 所有分量加正态分布随机数
+            point_set += np.random.normal(0, self.noise_scale, size=point_set.shape)  # random jitter # 所有分量加正态分布随机数
+
+        point_noise = point_set + np.random.normal(0, self.noise_scale, size=point_set.shape)
 
         # 沿z轴指定角度旋转
         if self.rotate:
@@ -312,9 +316,12 @@ class STEPMillionDataLoader(Dataset):
                 eualangle[:, [0, 2]] = eualangle[:, [0, 2]].dot(rotation_matrix)  # random rotation # 仅仅是x，y分量作旋转-----------
 
         if self.is_backaddattr:
-            return point_set, eualangle, is_nearby, meta_type
+            return point_set, point_noise, eualangle, is_nearby, meta_type, index
         else:
-            return point_set
+            return point_set, point_noise, index
+
+    def get_data_path(self, index):
+        return self.datapath[index].strip()
 
     def __len__(self):
         return len(self.datapath)
@@ -415,7 +422,7 @@ class MCBDataLoader(Dataset):
 
         # 从 np.arange(len(seg))中随机选数，数量为self.npoints，replace：是否可取相同数字，replace=true表示可取相同数字，可规定每个元素的抽取概率，默认均等概率
         try:
-            choice = np.random.choice(point_set.shape[0], self.npoints, replace=False)
+            choice = np.random.choice(point_set.shape[0], self.npoints, replace=True)
         except:
             print('捕获异常时的point_set.shape[0]：', point_set.shape[0])
             print('捕获出错时的文件：', fn[0], '------', fn[1])

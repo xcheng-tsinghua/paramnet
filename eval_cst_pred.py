@@ -35,21 +35,21 @@ from vis.vis import view_pcd_paper, ex_paras
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--bs', type=int, default=25, help='batch size in training') # batch_size
+    parser.add_argument('--bs', type=int, default=2, help='batch size in training') # batch_size
     parser.add_argument('--num_point', type=int, default=2000, help='Point Number') # 点数量
     parser.add_argument('--n_metatype', type=int, default=4, help='number of considered meta type')  # 计算约束时考虑的基元数, [0-13)共13种
 
-    parser.add_argument('--model', type=str, default='hpnet', choices=['hpnet', 'parsenet', 'cstpcd'], help='model used for pred')
-    parser.add_argument('--save_str', type=str, default='parsenet', help='dataloader workers')  # cst_pcd_abc25t
+    parser.add_argument('--model', type=str, default='cstpcd', choices=['hpnet', 'parsenet', 'cstpcd'], help='model used for pred')
+    parser.add_argument('--save_str', type=str, default='cstpcd_abc', help='dataloader workers')  # cst_pcd_abc25t
 
     parser.add_argument('--is_vis', default='True', choices=['True', 'False'], type=str, help='whether vis pred cst')
-    parser.add_argument('--local', default='True', choices=['True', 'False'], type=str, help='---')
-    parser.add_argument('--abc_pack', type=int, default=-1, help='pack of abc')  # 点数量
+    parser.add_argument('--local', default='False', choices=['True', 'False'], type=str, help='---')
+    parser.add_argument('--abc_pack', type=int, default=21, help='pack of abc')  # 点数量
     parser.add_argument('--root_sever', type=str,
                         default=r'/root/my_data/data_set/STEP20000_Hammersley_2000',
                         help='root of dataset')
     parser.add_argument('--root_local', type=str,
-                        default=r'D:\document\DeepLearning\DataSet\STEP20000_Hammersley_2000',
+                        default=r'D:\document\DeepLearning\DataSet\STEPMillion\STEPMillion_{pack_idx}\STEPMillion_pack{pack_idx}\overall',
                         help='root of dataset')
 
     # Parametric20000
@@ -144,11 +144,15 @@ def main(args):
 
             # 显示预测结果
             if args.is_vis == 'True':
-                coor, mad, adj, pmt = ex_paras(xyz, pred_eula_angle, pred_edge_nearby, pred_meta_type, 0)
+                bs_n = 0
+                coor, mad, adj, pmt = ex_paras(xyz, pred_eula_angle, pred_edge_nearby, pred_meta_type, bs_n)
 
-                view_pcd_paper(coor, mad)
+                l_coor, l_mad, l_adj, l_pmt = ex_paras(xyz, eula_angle_label, nearby_label, meta_type_label, bs_n, is_label=True)
 
-
+                view_pcd_paper(coor, l_mad, is_save_view=True)
+                view_pcd_paper(coor, mad, is_save_view=True)
+                view_pcd_paper(coor, adj, is_save_view=True)
+                view_pcd_paper(coor, pmt, is_save_view=True)
 
 
             loss_eula = F.mse_loss(eula_angle_label, pred_eula_angle)
