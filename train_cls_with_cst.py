@@ -59,7 +59,7 @@ def parse_args():
     parser.add_argument('--rotate', default=0, type=int, help='---')
     parser.add_argument('--cst_pcd', type=str, default='cst_pcd_abc25t.pth', help='---')
     parser.add_argument('--model', type=str, default='CstNet', choices=['GCN3D', 'DGCNN', 'PointNet', 'PointNet2', 'CstNet'], help='model used for cls')
-
+_cls_
     parser.add_argument('--local', default='False', choices=['True', 'False'], type=str, help='---')
     parser.add_argument('--root_sever', type=str,
                         default=r'/root/my_data/data_set/STEP20000_Hammersley_2000',
