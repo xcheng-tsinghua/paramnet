@@ -24,6 +24,7 @@ from sklearn.metrics import f1_score
 from sklearn.metrics import average_precision_score
 from sklearn.preprocessing import label_binarize
 from colorama import Fore, Back, Style, init
+import time
 
 # 自建模块
 from data_utils.ParamDataLoader import MCBDataLoader
@@ -256,6 +257,7 @@ def main(args):
 
             all_preds = []
             all_labels = []
+            start_time = time.time()
 
             for j, data in tqdm(enumerate(test_dataloader), total=len(test_dataloader)):
                 points, target = data[0].float().cuda(), data[1].long().cuda()
@@ -284,6 +286,10 @@ def main(args):
 
                 all_preds.append(pred.detach().cpu().numpy())
                 all_labels.append(target.detach().cpu().numpy())
+
+            end_time = time.time()
+            avg_time = (end_time - start_time) / len(test_dataloader)
+            print(f'average inference time: {avg_time}')
 
             all_metric_eval = all_metric_cls(all_preds, all_labels, os.path.join(confusion_dir, f'eval-{epoch}.png'))
             accustr = f'\teval_ins_acc\t{all_metric_eval[0]}\teval_cls_acc\t{all_metric_eval[1]}\teval_f1_m\t{all_metric_eval[2]}\teval_f1_w\t{all_metric_eval[3]}\tmAP\t{all_metric_eval[4]}'
