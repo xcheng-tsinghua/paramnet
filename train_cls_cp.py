@@ -129,42 +129,42 @@ def main(args):
     '''训练'''
     best_instance_accu = -1.0
     for epoch in range(args.epoch):
-        classifier = classifier.train()
-
-        logstr_epoch = f'Epoch({epoch}/{args.epoch}):'
-        all_preds = []
-        all_labels = []
-
-        for batch_id, data in tqdm(enumerate(train_dataloader, 0), total=len(train_dataloader)):
-            points, target = data[0].float().cuda(), data[1].long().cuda()
-
-            # -> [bs, 3, n_points]
-            points = points.permute(0, 2, 1)
-            assert points.size()[1] == 3
-
-            # 梯度置为零，否则梯度会累加
-            optimizer.zero_grad()
-
-            pred = classifier(points)
-            loss = F.nll_loss(pred, target)
-            # loss = loss_func(pred[0], target, pred[1])
-            # pred = pred[0]
-
-            # 利用loss更新参数
-            loss.backward()
-            optimizer.step()
-
-            # 保存数据用于计算指标
-            all_preds.append(pred.detach().cpu().numpy())
-            all_labels.append(target.detach().cpu().numpy())
-
-        # 计算分类指标
-        all_metric_train = all_metric_cls(all_preds, all_labels, os.path.join(confusion_dir, f'train-{epoch}.png'))
-        logstr_trainaccu = f'\ttrain_instance_accu:\t{all_metric_train[0]}'
-
-        # 调整学习率并保存权重
-        scheduler.step()
-        torch.save(classifier.state_dict(), 'model_trained/' + save_str + '.pth')
+        # classifier = classifier.train()
+        #
+        # logstr_epoch = f'Epoch({epoch}/{args.epoch}):'
+        # all_preds = []
+        # all_labels = []
+        #
+        # for batch_id, data in tqdm(enumerate(train_dataloader, 0), total=len(train_dataloader)):
+        #     points, target = data[0].float().cuda(), data[1].long().cuda()
+        #
+        #     # -> [bs, 3, n_points]
+        #     points = points.permute(0, 2, 1)
+        #     assert points.size()[1] == 3
+        #
+        #     # 梯度置为零，否则梯度会累加
+        #     optimizer.zero_grad()
+        #
+        #     pred = classifier(points)
+        #     loss = F.nll_loss(pred, target)
+        #     # loss = loss_func(pred[0], target, pred[1])
+        #     # pred = pred[0]
+        #
+        #     # 利用loss更新参数
+        #     loss.backward()
+        #     optimizer.step()
+        #
+        #     # 保存数据用于计算指标
+        #     all_preds.append(pred.detach().cpu().numpy())
+        #     all_labels.append(target.detach().cpu().numpy())
+        #
+        # # 计算分类指标
+        # all_metric_train = all_metric_cls(all_preds, all_labels, os.path.join(confusion_dir, f'train-{epoch}.png'))
+        # logstr_trainaccu = f'\ttrain_instance_accu:\t{all_metric_train[0]}'
+        #
+        # # 调整学习率并保存权重
+        # scheduler.step()
+        # torch.save(classifier.state_dict(), 'model_trained/' + save_str + '.pth')
 
         '''测试'''
         with torch.no_grad():

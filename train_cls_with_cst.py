@@ -198,58 +198,58 @@ def main(args):
     '''训练'''
     best_instance_accu = -1.0
     for epoch in range(args.epoch):
-        # classifier = classifier.train()
-        #
-        # logstr_epoch = f'Epoch({epoch}/{args.epoch}):'
-        # all_preds = []
-        # all_labels = []
-        #
-        # for batch_id, data in tqdm(enumerate(train_dataloader, 0), total=len(train_dataloader)):
-        #     points, target = data[0].float().cuda(), data[1].long().cuda()
-        #
-        #     # 使用预测属性
-        #     if is_use_pred_addattr:
-        #         eula_angle_label, nearby_label, meta_type_label = predictor(points)
-        #         nearby_label, meta_type_label = torch.exp(nearby_label), torch.exp(meta_type_label)
-        #         eula_angle_label, nearby_label, meta_type_label = eula_angle_label.detach(), nearby_label.detach(), meta_type_label.detach()
-        #
-        #     else:
-        #         eula_angle_label = data[2].float().cuda()
-        #         nearby_label = data[3].long().cuda()
-        #         meta_type_label = data[4].long().cuda()
-        #
-        #         # 将标签转化为 one-hot
-        #         nearby_label = F.one_hot(nearby_label, 2)
-        #         meta_type_label = F.one_hot(meta_type_label, args.n_metatype)
-        #
-        #     # -> [bs, 3, n_points]
-        #
-        #     # 梯度置为零，否则梯度会累加
-        #     optimizer.zero_grad()
-        #
-        #     if args.model == 'CstNet':
-        #         pred = classifier(points, eula_angle_label, nearby_label, meta_type_label)
-        #     else:
-        #         points = points.permute(0, 2, 1)
-        #         cstattr = torch.cat([eula_angle_label, nearby_label, meta_type_label], dim=-1).permute(0, 2, 1)
-        #         pred = classifier(points, cstattr)
-        #     loss = F.nll_loss(pred, target)
-        #
-        #     # 利用loss更新参数
-        #     loss.backward()
-        #     optimizer.step()
-        #
-        #     # 保存数据用于计算指标
-        #     all_preds.append(pred.detach().cpu().numpy())
-        #     all_labels.append(target.detach().cpu().numpy())
-        #
-        # # 计算分类指标
-        # all_metric_train = all_metric_cls(all_preds, all_labels, os.path.join(confusion_dir, f'train-{epoch}.png'))
-        # logstr_trainaccu = f'\ttrain_instance_accu:\t{all_metric_train[0]}'
-        #
-        # # 调整学习率并保存权重
-        # scheduler.step()
-        # torch.save(classifier.state_dict(), 'model_trained/' + save_str + '.pth')
+        classifier = classifier.train()
+
+        logstr_epoch = f'Epoch({epoch}/{args.epoch}):'
+        all_preds = []
+        all_labels = []
+
+        for batch_id, data in tqdm(enumerate(train_dataloader, 0), total=len(train_dataloader)):
+            points, target = data[0].float().cuda(), data[1].long().cuda()
+
+            # 使用预测属性
+            if is_use_pred_addattr:
+                eula_angle_label, nearby_label, meta_type_label = predictor(points)
+                nearby_label, meta_type_label = torch.exp(nearby_label), torch.exp(meta_type_label)
+                eula_angle_label, nearby_label, meta_type_label = eula_angle_label.detach(), nearby_label.detach(), meta_type_label.detach()
+
+            else:
+                eula_angle_label = data[2].float().cuda()
+                nearby_label = data[3].long().cuda()
+                meta_type_label = data[4].long().cuda()
+
+                # 将标签转化为 one-hot
+                nearby_label = F.one_hot(nearby_label, 2)
+                meta_type_label = F.one_hot(meta_type_label, args.n_metatype)
+
+            # -> [bs, 3, n_points]
+
+            # 梯度置为零，否则梯度会累加
+            optimizer.zero_grad()
+
+            if args.model == 'CstNet':
+                pred = classifier(points, eula_angle_label, nearby_label, meta_type_label)
+            else:
+                points = points.permute(0, 2, 1)
+                cstattr = torch.cat([eula_angle_label, nearby_label, meta_type_label], dim=-1).permute(0, 2, 1)
+                pred = classifier(points, cstattr)
+            loss = F.nll_loss(pred, target)
+
+            # 利用loss更新参数
+            loss.backward()
+            optimizer.step()
+
+            # 保存数据用于计算指标
+            all_preds.append(pred.detach().cpu().numpy())
+            all_labels.append(target.detach().cpu().numpy())
+
+        # 计算分类指标
+        all_metric_train = all_metric_cls(all_preds, all_labels, os.path.join(confusion_dir, f'train-{epoch}.png'))
+        logstr_trainaccu = f'\ttrain_instance_accu:\t{all_metric_train[0]}'
+
+        # 调整学习率并保存权重
+        scheduler.step()
+        torch.save(classifier.state_dict(), 'model_trained/' + save_str + '.pth')
 
         '''测试'''
         with torch.no_grad():
